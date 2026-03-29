@@ -1,0 +1,128 @@
+/** Magic bytes at offset 0x00 of every TUNX file: 93 FF 89 44 */
+const MAGIC = 0x44_89_ff_93;
+
+/** Config section marker: 95 FF 89 44 */
+const CONFIG_MARKER = 0x44_89_ff_95;
+
+/** Player section marker: A5 FF 89 44 */
+const PLAYER_MARKER = 0x44_89_ff_a5;
+
+/** Pairings section marker: B3 FF 89 44 */
+const PAIRINGS_MARKER = 0x44_89_ff_b3;
+
+/** Header occupies bytes 0x00 – 0x6B (108 bytes). */
+const HEADER_SIZE = 0x6c;
+
+/** Metadata strings begin immediately after the header. */
+const METADATA_OFFSET = 0x6c;
+
+/**
+ * Offset from the start of the config data (after marker + 4) to
+ * the total-rounds field (U16LE).
+ */
+const CONFIG_OFFSET_TOTAL_ROUNDS = 0x00;
+
+/**
+ * Offset from the start of the config data (after marker + 4) to
+ * the current-round field (U8).
+ */
+const CONFIG_OFFSET_CURRENT_ROUND = 0x11;
+
+/**
+ * Offset from the start of the config data (after marker + 4) to
+ * the player-count field (U16LE).
+ */
+const CONFIG_OFFSET_PLAYER_COUNT = 0x13;
+
+/** Number of UTF-16LE string fields per player record. */
+const PLAYER_STRING_COUNT = 30;
+
+/** Size of the numeric block appended after the string fields in each player record. */
+const PLAYER_NUMERIC_BLOCK_SIZE = 110;
+
+/** Byte offset inside the numeric block for the FIDE rating (U16LE). */
+const PLAYER_NUMERIC_OFFSET_FIDE_RATING = 0x08;
+
+/** Byte offset inside the numeric block for the national rating (U16LE). */
+const PLAYER_NUMERIC_OFFSET_NATIONAL_RATING = 0x0a;
+
+/** Byte offset inside the numeric block for the FIDE ID (U32LE). */
+const PLAYER_NUMERIC_OFFSET_FIDE_ID = 0x18;
+
+/** Fixed size of every pairing record in bytes. */
+const PAIRING_RECORD_SIZE = 21;
+
+/**
+ * Metadata string field indices (0-based).
+ * Not all indices carry data in every file; spare indices are empty strings.
+ */
+const METADATA = {
+  CATEGORIES: 13,
+  CHIEF_ARBITER: 3,
+  CITY: 10,
+  DEPUTY_ARBITER: 4,
+  FEDERATION: 20,
+  INTERNAL_ID: 11,
+  NAME: 0,
+  OTHER_ARBITERS: 6,
+  PGN_PATH_1: 7,
+  PGN_PATH_2: 8,
+  SHORT_NAME: 9,
+  SUBTITLE_LONG: 2,
+  SUBTITLE_SHORT: 1,
+  TIME_CONTROL: 14,
+  VENUE: 5,
+} as const;
+
+/**
+ * Player string field indices (0-based within each player's 30-string block).
+ */
+const PLAYER_STRINGS = {
+  CLUB: 9,
+  FEDERATION: 10,
+  FIRST_NAME: 1,
+  GROUP_1: 11,
+  GROUP_2: 12,
+  NATIONAL_ID: 5,
+  SHORT_NAME: 3,
+  SURNAME: 0,
+  TITLE: 4,
+  TYPE_CATEGORY: 17,
+} as const;
+
+/**
+ * Result codes stored in the pairing record.
+ */
+const RESULT_CODE = {
+  BLACK_WINS: 3,
+  BLACK_WINS_FORFEIT: 5,
+  DRAW: 2,
+  UNPLAYED: 9,
+  WHITE_WINS: 1,
+  WHITE_WINS_FORFEIT: 4,
+} as const;
+
+/** Pairing number used to indicate a bye (no opponent). */
+const BYE_PLAYER_NUMBER = 0xff_fe;
+
+export {
+  BYE_PLAYER_NUMBER,
+  CONFIG_MARKER,
+  CONFIG_OFFSET_CURRENT_ROUND,
+  CONFIG_OFFSET_PLAYER_COUNT,
+  CONFIG_OFFSET_TOTAL_ROUNDS,
+  HEADER_SIZE,
+  MAGIC,
+  METADATA,
+  METADATA_OFFSET,
+  PAIRING_RECORD_SIZE,
+  PAIRINGS_MARKER,
+  PLAYER_MARKER,
+  PLAYER_NUMERIC_BLOCK_SIZE,
+  PLAYER_NUMERIC_OFFSET_FIDE_ID,
+  PLAYER_NUMERIC_OFFSET_FIDE_RATING,
+  PLAYER_NUMERIC_OFFSET_NATIONAL_RATING,
+  PLAYER_STRING_COUNT,
+  PLAYER_STRINGS,
+  RESULT_CODE,
+};
