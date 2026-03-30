@@ -1,10 +1,12 @@
 # Backlog
 
-Last updated: 2026-03-29
+Last updated: 2026-03-30
 
 ## Medium
 
-- [ ] Decode remaining header fields (bytes 0x08–0x1B checksum algorithm).
+- [x] ~~Decode remaining header fields (bytes 0x08–0x1B checksum algorithm).~~
+      Decoded: tournamentId, savedAt, installedAt, licenseHash,
+      installSignature. Bytes 0x04, 0x24, 0x28–0x2F remain undetermined.
 - [ ] Decode remaining player numeric fields (110 bytes, only rating and FIDE ID
       mapped).
 - [ ] Decode config section fully (dates, pairing system, tiebreak settings).

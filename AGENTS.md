@@ -72,6 +72,18 @@ Fixed-size block at the start of every file. Starts with the 4-byte magic
 `93 FF 89 44` (LE: `0x4489FF93`). The header is preserved verbatim for
 round-trip fidelity.
 
+| Offset | Size | Field         | Type  | Notes                                    |
+| ------ | ---- | ------------- | ----- | ---------------------------------------- |
+| 0x00   | 4    | Magic         | U32LE | `0x4489FF93`                             |
+| 0x04   | 4    | (reserved)    | U32LE | Always 0 in known samples                |
+| 0x08   | 20   | License hash  | bytes | High-entropy, identical per SW install   |
+| 0x1C   | 4    | Saved-at date | U32LE | YYYYMMDD integer                         |
+| 0x20   | 4    | Tournament ID | U32LE | Matches chess-results.com tournament IDs |
+| 0x24   | 4    | (unknown)     | U32LE | Purpose undetermined                     |
+| 0x28   | 8    | (reserved)    | —     | Always 0                                 |
+| 0x30   | 4    | Installed-at  | U32LE | YYYYMMDD integer, likely SW install date |
+| 0x34   | 52   | Install sig.  | bytes | High-entropy, identical per SW install   |
+
 ### Metadata strings (0x6C → config marker)
 
 Sequence of variable-length UTF-16LE strings, each prefixed by a U16LE character
