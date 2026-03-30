@@ -95,6 +95,7 @@ interface Tournament {
   _raw: RawTournament;
   arbiters: Arbiter[];
   city?: string;
+  currentRound: number;
   dates?: DateRange;
   federation?: string;
   header: Header;

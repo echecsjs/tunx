@@ -118,6 +118,21 @@ describe('parse()', () => {
       });
     });
 
+    it('has currentRound 7', () => {
+      expect(tournament?.currentRound).toBe(7);
+    });
+
+    it('has dates from 2026-03-28 to 2026-03-28', () => {
+      expect(tournament?.dates).toEqual({
+        end: '2026-03-28',
+        start: '2026-03-28',
+      });
+    });
+
+    it('has round 1 date of 2026-03-28', () => {
+      expect(tournament?.rounds[0]?.date).toBe('2026-03-28');
+    });
+
     it('stores raw data for round-trip', () => {
       expect(tournament?._raw).toBeDefined();
       expect(tournament?._raw.headerBytes).toBeInstanceOf(Uint8Array);
@@ -237,6 +252,25 @@ describe('parse()', () => {
       });
     });
 
+    it('has currentRound 9', () => {
+      expect(tournament?.currentRound).toBe(9);
+    });
+
+    it('has dates from 2023-11-30 to 2023-12-08', () => {
+      expect(tournament?.dates).toEqual({
+        end: '2023-12-08',
+        start: '2023-11-30',
+      });
+    });
+
+    it('has round 1 date of 2023-11-30', () => {
+      expect(tournament?.rounds[0]?.date).toBe('2023-11-30');
+    });
+
+    it('has round 9 date of 2023-12-08', () => {
+      expect(tournament?.rounds[8]?.date).toBe('2023-12-08');
+    });
+
     describe('header', () => {
       it('has the correct tournament ID', () => {
         expect(tournament?.header.tournamentId).toBe(753_347);
@@ -257,6 +291,19 @@ describe('parse()', () => {
         expect(d?.getUTCMonth()).toBe(8);
         expect(d?.getUTCDate()).toBe(30);
       });
+    });
+  });
+
+  describe('abs_fem_1378181.TUNX', () => {
+    const data = fixture('abs_fem_1378181.TUNX');
+    const tournament = parse(data);
+
+    it('parses successfully', () => {
+      expect(tournament).toBeDefined();
+    });
+
+    it('has currentRound 5', () => {
+      expect(tournament?.currentRound).toBe(5);
     });
   });
 });

@@ -1,7 +1,10 @@
 import {
   BYE_PLAYER_NUMBER,
   CONFIG_MARKER,
+  CONFIG_OFFSET_CURRENT_ROUND,
+  CONFIG_OFFSET_END_DATE,
   CONFIG_OFFSET_PLAYER_COUNT,
+  CONFIG_OFFSET_START_DATE,
   CONFIG_OFFSET_TOTAL_ROUNDS,
   HEADER_INSTALLED_AT_OFFSET,
   HEADER_INSTALL_SIGNATURE_OFFSET,
@@ -35,6 +38,7 @@ import {
 import BinaryReader from './reader.js';
 
 import type {
+  DateRange,
   Header,
   Pairing,
   ParseOptions,
@@ -117,6 +121,19 @@ function parseDate(yyyymmdd: number): Date | undefined {
   const day = yyyymmdd % 100;
 
   return new Date(Date.UTC(year, month - 1, day));
+}
+
+/** Format a YYYYMMDD integer as an ISO date string (YYYY-MM-DD). */
+function formatDate(yyyymmdd: number): string | undefined {
+  if (yyyymmdd === 0) {
+    return undefined;
+  }
+
+  const year = Math.floor(yyyymmdd / 10_000);
+  const month = Math.floor((yyyymmdd % 10_000) / 100);
+  const day = yyyymmdd % 100;
+
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 /**
@@ -229,6 +246,26 @@ export default function parse(
     configDataOffset + CONFIG_OFFSET_PLAYER_COUNT,
     true,
   );
+
+  const currentRound = configView.getUint8(
+    configDataOffset + CONFIG_OFFSET_CURRENT_ROUND,
+  );
+
+  const startDateRaw = configView.getUint32(
+    configDataOffset + CONFIG_OFFSET_START_DATE,
+    true,
+  );
+  const endDateRaw = configView.getUint32(
+    configDataOffset + CONFIG_OFFSET_END_DATE,
+    true,
+  );
+  const startDate = formatDate(startDateRaw);
+  const endDate = formatDate(endDateRaw);
+
+  const dates: DateRange | undefined =
+    startDate !== undefined && endDate !== undefined
+      ? { end: endDate, start: startDate }
+      : undefined;
 
   if (totalRounds === 0) {
     onWarning?.({
@@ -529,6 +566,85 @@ export default function parse(
     });
   }
 
+  // ── 8b. Extract round dates from config section ──────────────────────────
+  const configDataView = new DataView(
+    configBytes.buffer,
+    configBytes.byteOffset,
+    configBytes.byteLength,
+  );
+
+  // Scan for first date in round block area (after offset 0x1000 from config data start)
+  let roundBlockDateOffset = -1;
+  const scanStart = configDataOffset + 0x10_00;
+
+  for (let index = scanStart; index < configBytes.byteLength - 3; index++) {
+    const value = configDataView.getUint32(index, true);
+
+    if (value >= 20_000_101 && value <= 20_991_231) {
+      const month = Math.floor((value % 10_000) / 100);
+      const day = value % 100;
+
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        roundBlockDateOffset = index;
+        break;
+      }
+    }
+  }
+
+  if (roundBlockDateOffset !== -1 && totalRounds >= 2) {
+    // Find the second round's date to compute block size.
+    // Within each round block, multiple date fields may be present close
+    // together (≤ 20 bytes apart). The next round block starts further away
+    // (typically 100+ bytes). We skip ahead by 32 bytes from the first found
+    // date to land past any within-block duplicates before resuming the scan.
+    let secondDateOffset = -1;
+
+    for (
+      let index = roundBlockDateOffset + 32;
+      index < configBytes.byteLength - 3;
+      index++
+    ) {
+      const value = configDataView.getUint32(index, true);
+
+      if (value >= 20_000_101 && value <= 20_991_231) {
+        const month = Math.floor((value % 10_000) / 100);
+        const day = value % 100;
+
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          secondDateOffset = index;
+          break;
+        }
+      }
+    }
+
+    if (secondDateOffset !== -1) {
+      const blockSize = secondDateOffset - roundBlockDateOffset;
+
+      for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
+        const dateOffset = roundBlockDateOffset + roundIndex * blockSize;
+
+        if (dateOffset + 4 <= configBytes.byteLength) {
+          const dateValue = configDataView.getUint32(dateOffset, true);
+          const dateString = formatDate(dateValue);
+
+          const round = rounds[roundIndex];
+
+          if (dateString !== undefined && round !== undefined) {
+            round.date = dateString;
+          }
+        }
+      }
+    }
+  } else if (roundBlockDateOffset !== -1 && totalRounds === 1) {
+    // Single round — use the found date directly
+    const dateValue = configDataView.getUint32(roundBlockDateOffset, true);
+    const dateString = formatDate(dateValue);
+
+    if (dateString !== undefined && rounds[0] !== undefined) {
+      rounds[0].date = dateString;
+    }
+  }
+
   // Extract metadata fields
   const getMetadata = (index: number): string => metadataStrings[index] ?? '';
 
@@ -569,6 +685,8 @@ export default function parse(
     _raw: raw,
     arbiters,
     city,
+    currentRound,
+    dates,
     federation,
     header,
     name,

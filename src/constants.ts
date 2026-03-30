@@ -49,11 +49,17 @@ const CONFIG_OFFSET_TOTAL_ROUNDS = 0x00;
  */
 const CONFIG_OFFSET_CURRENT_ROUND = 0x11;
 
+/** Offset from config data start to the tournament end date (U32LE, YYYYMMDD). */
+const CONFIG_OFFSET_END_DATE = 0x4b;
+
 /**
  * Offset from the start of the config data (after marker + 4) to
  * the player-count field (U16LE).
  */
 const CONFIG_OFFSET_PLAYER_COUNT = 0x13;
+
+/** Offset from config data start to the tournament start date (U32LE, YYYYMMDD). */
+const CONFIG_OFFSET_START_DATE = 0x47;
 
 /** Number of UTF-16LE string fields per player record. */
 const PLAYER_STRING_COUNT = 30;
@@ -151,7 +157,9 @@ export {
   BYE_PLAYER_NUMBER,
   CONFIG_MARKER,
   CONFIG_OFFSET_CURRENT_ROUND,
+  CONFIG_OFFSET_END_DATE,
   CONFIG_OFFSET_PLAYER_COUNT,
+  CONFIG_OFFSET_START_DATE,
   CONFIG_OFFSET_TOTAL_ROUNDS,
   HEADER_INSTALL_SIGNATURE_OFFSET,
   HEADER_INSTALL_SIGNATURE_SIZE,
