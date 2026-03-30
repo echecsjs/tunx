@@ -21,5 +21,7 @@ Last updated: 2026-03-30
 - [x] ~~Decode additional result codes beyond 1–5, 9.~~ Added code 0 = unpaired
       (found in incomplete tournaments). Codes 6–8 not observed in any fixture
       file.
-- [ ] Support creating TUNX files from scratch (currently requires `_raw` from a
-      parsed file).
+- [x] ~~Support creating TUNX files from scratch (currently requires `_raw` from
+      a parsed file).~~ Added template-based `create(template, input)` function.
+      Requires an existing parsed TUNX as template for license bytes and config
+      structure.
