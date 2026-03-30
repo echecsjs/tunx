@@ -72,6 +72,7 @@ interface Player {
   ratingPeriod?: number;
   registrationId?: number;
   results: Result[];
+  /** Player sex. `'F'` when explicitly flagged female; `undefined` otherwise. */
   sex?: 'F' | 'M';
   surname: string;
   title?: Title;

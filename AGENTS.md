@@ -128,11 +128,18 @@ Immediately follows the config section. Each player record contains:
    national ID, etc.
 2. **110-byte numeric block** — fixed-size binary data including:
 
-| Offset | Size  | Field           |
-| ------ | ----- | --------------- |
-| 0x08   | U16LE | FIDE rating     |
-| 0x0A   | U16LE | National rating |
-| 0x18   | U32LE | FIDE ID         |
+| Offset | Size  | Field              |
+| ------ | ----- | ------------------ |
+| 0x06   | U8    | Sex (0=M, 1=F)     |
+| 0x08   | U16LE | FIDE rating        |
+| 0x0A   | U16LE | National rating    |
+| 0x0E   | U16LE | Rating delta       |
+| 0x10   | U16LE | Rating period      |
+| 0x12   | U16LE | Category ID        |
+| 0x16   | U16LE | Registration ID    |
+| 0x18   | U32LE | FIDE ID            |
+| 0x38   | U16LE | Alphabetical index |
+| 0x3A   | U16LE | K-factor           |
 
 Player string field indices within the 30-field block:
 
