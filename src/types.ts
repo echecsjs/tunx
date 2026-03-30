@@ -14,6 +14,44 @@ interface Arbiter {
   role: 'arbiter' | 'chief' | 'deputy';
 }
 
+interface CreateInput {
+  arbiters?: Arbiter[];
+  city?: string;
+  dates?: DateRange;
+  federation?: string;
+  name: string;
+  players: CreatePlayer[];
+  rounds: CreateRound[];
+  subtitle?: string;
+  timeControl?: string;
+  venue?: string;
+}
+
+interface CreatePairing {
+  black: number;
+  result: ResultKind;
+  white: number;
+}
+
+interface CreatePlayer {
+  club?: string;
+  federation?: string;
+  fideId?: number;
+  firstName: string;
+  kFactor?: number;
+  nationalId?: string;
+  nationalRating?: number;
+  rating?: number;
+  sex?: 'F' | 'M';
+  surname: string;
+  title?: Title;
+}
+
+interface CreateRound {
+  date?: string;
+  pairings: CreatePairing[];
+}
+
 interface DateRange {
   end: string;
   start: string;
@@ -140,6 +178,10 @@ type Title = 'CM' | 'FM' | 'GM' | 'IM' | 'WCM' | 'WFM' | 'WGM' | 'WIM';
 
 export type {
   Arbiter,
+  CreateInput,
+  CreatePairing,
+  CreatePlayer,
+  CreateRound,
   DateRange,
   Header,
   Pairing,

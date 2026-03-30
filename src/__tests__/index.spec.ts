@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import nodePath from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { parse, stringify } from '../index.js';
+import { create, parse, stringify } from '../index.js';
 
 const { join } = nodePath;
 const FIXTURES = join(import.meta.dirname, 'fixtures');
@@ -312,6 +312,91 @@ describe('parse()', () => {
       const unpaired = round6?.pairings.filter((p) => p.result === 'unpaired');
       expect(unpaired?.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('create()', () => {
+  const templateData = fixture('sample.TUNX');
+  const template = parse(templateData);
+
+  it('creates a tournament with the given name', () => {
+    const result = create(template!, {
+      name: 'Test Tournament',
+      players: [
+        { firstName: 'Magnus', surname: 'Carlsen', rating: 2830 },
+        { firstName: 'Hikaru', surname: 'Nakamura', rating: 2780 },
+      ],
+      rounds: [
+        {
+          pairings: [{ white: 1, black: 2, result: 'win' }],
+        },
+      ],
+    });
+    expect(result.name).toBe('Test Tournament');
+  });
+
+  it('preserves the template header bytes', () => {
+    const result = create(template!, {
+      name: 'Test',
+      players: [
+        { firstName: 'A', surname: 'B' },
+        { firstName: 'C', surname: 'D' },
+      ],
+      rounds: [
+        {
+          pairings: [{ white: 1, black: 2, result: 'draw' }],
+        },
+      ],
+    });
+    expect(result._raw.headerBytes).toEqual(template!._raw.headerBytes);
+  });
+
+  it('round-trips through stringify and parse', () => {
+    const input = {
+      name: 'Round-Trip Test',
+      players: [
+        {
+          firstName: 'Magnus',
+          surname: 'Carlsen',
+          rating: 2830,
+          fideId: 1_503_014,
+          sex: 'M' as const,
+        },
+        {
+          firstName: 'Hikaru',
+          surname: 'Nakamura',
+          rating: 2780,
+          fideId: 2_016_192,
+        },
+      ],
+      rounds: [
+        {
+          date: '2026-03-30',
+          pairings: [{ white: 1, black: 2, result: 'win' as const }],
+        },
+      ],
+    };
+
+    const created = create(template!, input);
+    const bytes = stringify(created);
+    const reparsed = parse(bytes);
+
+    expect(reparsed).toBeDefined();
+    expect(reparsed?.name).toBe('Round-Trip Test');
+    expect(reparsed?.players).toHaveLength(2);
+    expect(reparsed?.players[0]?.surname).toBe('Carlsen');
+    expect(reparsed?.players[0]?.rating).toBe(2830);
+    expect(reparsed?.players[0]?.fideId).toBe(1_503_014);
+    expect(reparsed?.players[1]?.surname).toBe('Nakamura');
+    expect(reparsed?.rounds).toHaveLength(1);
+    expect(reparsed?.rounds[0]?.pairings[0]?.result).toBe('win');
+  });
+
+  it('throws if template has no _raw', () => {
+    const noRaw = { ...template!, _raw: undefined as never };
+    expect(() => create(noRaw, { name: 'X', players: [], rounds: [] })).toThrow(
+      RangeError,
+    );
   });
 });
 
