@@ -13,6 +13,27 @@ const PAIRINGS_MARKER = 0x44_89_ff_b3;
 /** Header occupies bytes 0x00 – 0x6B (108 bytes). */
 const HEADER_SIZE = 0x6c;
 
+/** Byte offset inside the header for the install signature (52 bytes). */
+const HEADER_INSTALL_SIGNATURE_OFFSET = 0x34;
+
+/** Size of the install signature block in bytes. */
+const HEADER_INSTALL_SIGNATURE_SIZE = 52;
+
+/** Byte offset inside the header for the installed-at date (U32LE, YYYYMMDD). */
+const HEADER_INSTALLED_AT_OFFSET = 0x30;
+
+/** Byte offset inside the header for the license hash (20 bytes). */
+const HEADER_LICENSE_HASH_OFFSET = 0x08;
+
+/** Size of the license hash block in bytes. */
+const HEADER_LICENSE_HASH_SIZE = 20;
+
+/** Byte offset inside the header for the saved-at date (U32LE, YYYYMMDD). */
+const HEADER_SAVED_AT_OFFSET = 0x1c;
+
+/** Byte offset inside the header for the tournament ID (U32LE). */
+const HEADER_TOURNAMENT_ID_OFFSET = 0x20;
+
 /** Metadata strings begin immediately after the header. */
 const METADATA_OFFSET = 0x6c;
 
@@ -111,7 +132,14 @@ export {
   CONFIG_OFFSET_CURRENT_ROUND,
   CONFIG_OFFSET_PLAYER_COUNT,
   CONFIG_OFFSET_TOTAL_ROUNDS,
+  HEADER_INSTALL_SIGNATURE_OFFSET,
+  HEADER_INSTALL_SIGNATURE_SIZE,
+  HEADER_INSTALLED_AT_OFFSET,
+  HEADER_LICENSE_HASH_OFFSET,
+  HEADER_LICENSE_HASH_SIZE,
+  HEADER_SAVED_AT_OFFSET,
   HEADER_SIZE,
+  HEADER_TOURNAMENT_ID_OFFSET,
   MAGIC,
   METADATA,
   METADATA_OFFSET,

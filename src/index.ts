@@ -3,6 +3,7 @@ export { default as stringify } from './stringify.js';
 export type {
   Arbiter,
   DateRange,
+  Header,
   Pairing,
   PairingSystem,
   ParseError,

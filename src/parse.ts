@@ -3,7 +3,14 @@ import {
   CONFIG_MARKER,
   CONFIG_OFFSET_PLAYER_COUNT,
   CONFIG_OFFSET_TOTAL_ROUNDS,
+  HEADER_INSTALLED_AT_OFFSET,
+  HEADER_INSTALL_SIGNATURE_OFFSET,
+  HEADER_INSTALL_SIGNATURE_SIZE,
+  HEADER_LICENSE_HASH_OFFSET,
+  HEADER_LICENSE_HASH_SIZE,
+  HEADER_SAVED_AT_OFFSET,
   HEADER_SIZE,
+  HEADER_TOURNAMENT_ID_OFFSET,
   MAGIC,
   METADATA,
   METADATA_OFFSET,
@@ -20,6 +27,7 @@ import {
 import BinaryReader from './reader.js';
 
 import type {
+  Header,
   Pairing,
   ParseOptions,
   Player,
@@ -90,6 +98,15 @@ function toTitle(value: string): Title | undefined {
   return valid.includes(value as Title) ? (value as Title) : undefined;
 }
 
+/** Convert a YYYYMMDD integer to a UTC Date. */
+function parseDate(yyyymmdd: number): Date {
+  const year = Math.floor(yyyymmdd / 10_000);
+  const month = Math.floor((yyyymmdd % 10_000) / 100);
+  const day = yyyymmdd % 100;
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 /**
  * Parse a TUNX binary tournament file.
  *
@@ -123,6 +140,29 @@ export default function parse(
 
   // ── 2. Read header bytes ─────────────────────────────────────────────────
   const headerBytes = input.slice(0, HEADER_SIZE);
+
+  // ── 2b. Decode header fields ─────────────────────────────────────────────
+  const licenseHash = headerBytes.slice(
+    HEADER_LICENSE_HASH_OFFSET,
+    HEADER_LICENSE_HASH_OFFSET + HEADER_LICENSE_HASH_SIZE,
+  );
+  const savedAt = parseDate(view.getUint32(HEADER_SAVED_AT_OFFSET, true));
+  const tournamentId = view.getUint32(HEADER_TOURNAMENT_ID_OFFSET, true);
+  const installedAt = parseDate(
+    view.getUint32(HEADER_INSTALLED_AT_OFFSET, true),
+  );
+  const installSignature = headerBytes.slice(
+    HEADER_INSTALL_SIGNATURE_OFFSET,
+    HEADER_INSTALL_SIGNATURE_OFFSET + HEADER_INSTALL_SIGNATURE_SIZE,
+  );
+
+  const header: Header = {
+    installSignature,
+    installedAt,
+    licenseHash,
+    savedAt,
+    tournamentId,
+  };
 
   // ── 3. Locate section markers ────────────────────────────────────────────
   const configMarkerOffset = findMarker(input, CONFIG_MARKER);
@@ -488,6 +528,7 @@ export default function parse(
     arbiters,
     city,
     federation,
+    header,
     name,
     pairingSystem: 'dutch',
     players,

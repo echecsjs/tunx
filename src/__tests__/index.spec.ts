@@ -115,6 +115,38 @@ describe('parse()', () => {
       expect(tournament?._raw.playerStrings).toHaveLength(29);
       expect(tournament?._raw.playerNumericBytes).toHaveLength(29);
     });
+
+    describe('header', () => {
+      it('has the correct tournament ID', () => {
+        expect(tournament?.header.tournamentId).toBe(1_378_181);
+      });
+
+      it('has a savedAt date of 2024-10-23', () => {
+        const d = tournament?.header.savedAt;
+        expect(d).toBeInstanceOf(Date);
+        expect(d?.getUTCFullYear()).toBe(2024);
+        expect(d?.getUTCMonth()).toBe(9); // 0-indexed
+        expect(d?.getUTCDate()).toBe(23);
+      });
+
+      it('has an installedAt date of 2011-01-15', () => {
+        const d = tournament?.header.installedAt;
+        expect(d).toBeInstanceOf(Date);
+        expect(d?.getUTCFullYear()).toBe(2011);
+        expect(d?.getUTCMonth()).toBe(0);
+        expect(d?.getUTCDate()).toBe(15);
+      });
+
+      it('has a 20-byte licenseHash', () => {
+        expect(tournament?.header.licenseHash).toBeInstanceOf(Uint8Array);
+        expect(tournament?.header.licenseHash).toHaveLength(20);
+      });
+
+      it('has a 52-byte installSignature', () => {
+        expect(tournament?.header.installSignature).toBeInstanceOf(Uint8Array);
+        expect(tournament?.header.installSignature).toHaveLength(52);
+      });
+    });
   });
 
   describe('2023_elllobregat_a_753347.TUNX', () => {
@@ -162,6 +194,28 @@ describe('parse()', () => {
 
       it('has the correct federation', () => {
         expect(player?.federation).toBe('SLO');
+      });
+    });
+
+    describe('header', () => {
+      it('has the correct tournament ID', () => {
+        expect(tournament?.header.tournamentId).toBe(753_347);
+      });
+
+      it('has a savedAt date of 2025-03-19', () => {
+        const d = tournament?.header.savedAt;
+        expect(d).toBeInstanceOf(Date);
+        expect(d?.getUTCFullYear()).toBe(2025);
+        expect(d?.getUTCMonth()).toBe(2);
+        expect(d?.getUTCDate()).toBe(19);
+      });
+
+      it('has an installedAt date of 2007-09-30', () => {
+        const d = tournament?.header.installedAt;
+        expect(d).toBeInstanceOf(Date);
+        expect(d?.getUTCFullYear()).toBe(2007);
+        expect(d?.getUTCMonth()).toBe(8);
+        expect(d?.getUTCDate()).toBe(30);
       });
     });
   });

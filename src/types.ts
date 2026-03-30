@@ -19,6 +19,19 @@ interface DateRange {
   start: string;
 }
 
+interface Header {
+  /** High-entropy bytes 0x34–0x68, likely tied to SW license/installation. */
+  installSignature: Uint8Array;
+  /** Older date (offset 0x30), possibly SW installation date. */
+  installedAt: Date;
+  /** High-entropy bytes 0x08–0x1B, likely tied to SW license/installation. */
+  licenseHash: Uint8Array;
+  /** Date the file was last saved (offset 0x1C). */
+  savedAt: Date;
+  /** Chess-Results tournament ID (offset 0x20). */
+  tournamentId: number;
+}
+
 interface Pairing {
   black: number;
   board: number;
@@ -76,6 +89,7 @@ interface Tournament {
   city?: string;
   dates?: DateRange;
   federation?: string;
+  header: Header;
   name: string;
   pairingSystem: PairingSystem;
   players: Player[];
@@ -118,6 +132,7 @@ type Title = 'CM' | 'FM' | 'GM' | 'IM' | 'WCM' | 'WFM' | 'WGM' | 'WIM';
 export type {
   Arbiter,
   DateRange,
+  Header,
   Pairing,
   PairingSystem,
   ParseError,
