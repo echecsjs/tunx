@@ -11,7 +11,9 @@ Last updated: 2026-03-30
       ID mapped).~~ Decoded: sex, nationalRating, kFactor, alphabeticalIndex,
       ratingDelta, ratingPeriod, categoryId, registrationId. ~70 bytes remain as
       zero-padding.
-- [ ] Decode config section fully (dates, pairing system, tiebreak settings).
+- [x] ~~Decode config section fully (dates, pairing system, tiebreak
+      settings).~~ Decoded: startDate, endDate, currentRound, round dates.
+      Pairing system and tiebreak settings remain undetermined.
 - [ ] Add `NPM_TOKEN` secret to GitHub repo and verify npm publish.
 
 ## Low

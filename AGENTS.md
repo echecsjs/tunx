@@ -117,6 +117,8 @@ skipping the 4-byte marker):
 | 0x00   | U16LE | Total rounds  |
 | 0x11   | U8    | Current round |
 | 0x13   | U16LE | Player count  |
+| 0x47   | U32LE | Start date    |
+| 0x4B   | U32LE | End date      |
 
 The entire config section is stored raw for round-trip.
 
