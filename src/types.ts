@@ -167,6 +167,8 @@ type Tiebreak =
   | 'average-rating'
   | 'buchholz'
   | 'buchholz-cut-1'
+  | 'buchholz-cut-2'
+  | 'buchholz-cut-3'
   | 'direct-encounter'
   | 'koya'
   | 'median-buchholz'

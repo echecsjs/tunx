@@ -157,6 +157,8 @@ const TIEBREAK_CODE = {
   0x51: 'sonneborn-berger',
   0x54: 'buchholz',
   0x55: 'buchholz-cut-1',
+  0x56: 'buchholz-cut-2',
+  0x57: 'buchholz-cut-3',
   0x58: 'average-rating',
 } as const;
 
