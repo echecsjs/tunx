@@ -8,20 +8,16 @@ interface RawTournament {
   playerStrings: string[][];
 }
 
-interface Arbiter {
-  fideId?: number;
-  name: string;
-  role: 'arbiter' | 'chief' | 'deputy';
-}
-
 interface CreateInput {
-  arbiters?: Arbiter[];
+  chiefArbiter?: string;
   city?: string;
-  dates?: DateRange;
+  deputyArbiters?: string[];
+  endDate?: string;
   federation?: string;
   name: string;
   players: CreatePlayer[];
   rounds: CreateRound[];
+  startDate?: string;
   subtitle?: string;
   timeControl?: string;
   venue?: string;
@@ -29,7 +25,7 @@ interface CreateInput {
 
 interface CreatePairing {
   black: number;
-  result: ResultKind;
+  result: ResultCode;
   white: number;
 }
 
@@ -52,11 +48,6 @@ interface CreateRound {
   pairings: CreatePairing[];
 }
 
-interface DateRange {
-  end: string;
-  start: string;
-}
-
 interface Header {
   /** High-entropy bytes 0x34–0x67, likely tied to SW license/installation. */
   installSignature: Uint8Array;
@@ -70,10 +61,17 @@ interface Header {
   tournamentId: number;
 }
 
+interface NationalRating {
+  federation: string;
+  nationalId?: string;
+  pairingNumber: number;
+  rating: number;
+}
+
 interface Pairing {
   black: number;
   board: number;
-  result?: ResultKind;
+  result?: ResultCode;
   white: number;
 }
 
@@ -93,76 +91,60 @@ interface ParseWarning {
 }
 
 interface Player {
-  alphabeticalIndex?: number;
-  birthYear?: number;
-  categoryId?: number;
-  club?: string;
+  // TRF-compatible fields
+  birthDate?: string;
   federation?: string;
-  fideId?: number;
-  firstName: string;
-  group?: string;
-  kFactor?: number;
-  nationalId?: string;
-  nationalRating?: number;
+  fideId?: string;
+  name: string;
+  nationalRatings?: NationalRating[];
   pairingNumber: number;
+  points: number;
+  rank: number;
   rating?: number;
-  ratingDelta?: number;
-  ratingPeriod?: number;
-  registrationId?: number;
-  results: Result[];
-  /** Player sex. `'F'` when explicitly flagged female; `undefined` otherwise. */
-  sex?: 'F' | 'M';
-  surname: string;
+  results: RoundResult[];
+  /** Player sex. `'w'` when explicitly flagged female; `undefined` otherwise. */
+  sex?: Sex;
   title?: Title;
 }
 
-interface Result {
-  color?: 'black' | 'white';
-  kind: ResultKind;
-  opponent?: number;
+interface RoundResult {
+  color: '-' | 'b' | 'w';
+  opponentId?: number;
+  result: ResultCode;
   round: number;
 }
 
-interface Round {
-  date?: string;
-  number: number;
-  pairings: Pairing[];
-  time?: string;
-}
-
 interface Tournament {
-  _raw: RawTournament;
-  arbiters: Arbiter[];
+  // TRF-compatible fields
+  chiefArbiter?: string;
   city?: string;
-  currentRound: number;
-  dates?: DateRange;
+  deputyArbiters?: string[];
+  endDate?: string;
   federation?: string;
-  header: Header;
-  name: string;
-  pairingSystem: PairingSystem;
+  name?: string;
+  numberOfPlayers?: number;
   players: Player[];
-  rounds: Round[];
-  subtitle?: string;
-  tiebreaks: Tiebreak[];
+  roundDates?: string[];
+  rounds: number;
+  startDate?: string;
+  tiebreaks?: string[];
   timeControl?: string;
+  tournamentType?: string;
+
+  // TUNX-specific extensions
+  _raw: RawTournament;
+  currentRound?: number;
+  header?: Header;
+  pairings?: Pairing[][];
+  roundTimes?: string[];
+  subtitle?: string;
   venue?: string;
 }
 
-type PairingSystem = 'burstein' | 'dutch' | 'lim' | 'round-robin';
-
-type ResultKind =
-  | 'bye'
-  | 'double-forfeit'
-  | 'draw'
-  | 'forfeit-loss'
-  | 'forfeit-win'
-  | 'half-bye'
-  | 'loss'
-  | 'unpaired'
-  | 'win';
-
-type Sex = 'F' | 'M';
-
+/**
+ * Tiebreak identifiers. Used as values in `Tournament.tiebreaks` (string[]).
+ * Kept for documentation/reference.
+ */
 type Tiebreak =
   | 'average-rating'
   | 'buchholz'
@@ -177,26 +159,38 @@ type Tiebreak =
   | 'progressive'
   | 'sonneborn-berger';
 
+type ResultCode =
+  | '+'
+  | '-'
+  | '0'
+  | '1'
+  | '='
+  | 'D'
+  | 'F'
+  | 'H'
+  | 'U'
+  | 'W'
+  | 'Z';
+
+type Sex = 'm' | 'w';
+
 type Title = 'CM' | 'FM' | 'GM' | 'IM' | 'WCM' | 'WFM' | 'WGM' | 'WIM';
 
 export type {
-  Arbiter,
   CreateInput,
   CreatePairing,
   CreatePlayer,
   CreateRound,
-  DateRange,
   Header,
+  NationalRating,
   Pairing,
-  PairingSystem,
   ParseError,
   ParseOptions,
   ParseWarning,
   Player,
   RawTournament,
-  Result,
-  ResultKind,
-  Round,
+  ResultCode,
+  RoundResult,
   Sex,
   Tiebreak,
   Title,

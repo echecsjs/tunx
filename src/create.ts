@@ -22,39 +22,58 @@ import type {
   CreateInput,
   CreatePlayer,
   RawTournament,
-  ResultKind,
+  ResultCode,
   Tournament,
 } from './types.js';
 
-/** Map a ResultKind back to a TUNX binary result code. */
-function resultKindToCode(kind: ResultKind): number {
-  switch (kind) {
-    case 'unpaired': {
+/** Compute points earned from a ResultCode. */
+function pointsFromResult(code: ResultCode): number {
+  switch (code) {
+    case '1':
+    case '+':
+    case 'W': {
+      return 1;
+    }
+    case '=':
+    case 'H':
+    case 'D': {
+      return 0.5;
+    }
+    default: {
+      return 0;
+    }
+  }
+}
+
+/** Map a ResultCode (from white's perspective) to a TUNX binary result code. */
+function resultCodeToTunx(code: ResultCode): number {
+  switch (code) {
+    case 'Z': {
       return RESULT_CODE.UNPAIRED;
     }
-    case 'win': {
+    case '1': {
       return RESULT_CODE.WHITE_WINS;
     }
-    case 'draw': {
+    case '=': {
       return RESULT_CODE.DRAW;
     }
-    case 'loss': {
+    case '0': {
       return RESULT_CODE.BLACK_WINS;
     }
-    case 'forfeit-win': {
+    case '+': {
       return RESULT_CODE.WHITE_WINS_FORFEIT;
     }
-    case 'forfeit-loss': {
+    case '-': {
       return RESULT_CODE.BLACK_WINS_FORFEIT;
     }
-    case 'bye': {
+    case 'F': {
       return RESULT_CODE.UNPLAYED;
     }
-    case 'double-forfeit': {
-      return 6;
-    }
-    case 'half-bye': {
+    case 'H': {
       return 7;
+    }
+    default: {
+      return RESULT_CODE.UNPAIRED;
     }
   }
 }
@@ -80,17 +99,10 @@ function buildMetadataStrings(
   strings[METADATA.FEDERATION] = input.federation ?? '';
   strings[METADATA.TIME_CONTROL] = input.timeControl ?? '';
 
-  // Arbiters
-  const chief = input.arbiters?.find((a) => a.role === 'chief');
-  const deputy = input.arbiters?.find((a) => a.role === 'deputy');
-  const others = input.arbiters
-    ?.filter((a) => a.role === 'arbiter')
-    .map((a) => a.name)
-    .join(', ');
-
-  strings[METADATA.CHIEF_ARBITER] = chief?.name ?? '';
-  strings[METADATA.DEPUTY_ARBITER] = deputy?.name ?? '';
-  strings[METADATA.OTHER_ARBITERS] = others ?? '';
+  strings[METADATA.CHIEF_ARBITER] = input.chiefArbiter ?? '';
+  strings[METADATA.DEPUTY_ARBITER] = input.deputyArbiters?.[0] ?? '';
+  strings[METADATA.OTHER_ARBITERS] =
+    input.deputyArbiters?.slice(1).join(', ') ?? '';
 
   return strings;
 }
@@ -162,15 +174,18 @@ function patchConfigBytes(
     true,
   );
 
-  if (input.dates) {
+  if (input.startDate !== undefined) {
     view.setUint32(
       dataOffset + CONFIG_OFFSET_START_DATE,
-      dateToYYYYMMDD(input.dates.start),
+      dateToYYYYMMDD(input.startDate),
       true,
     );
+  }
+
+  if (input.endDate !== undefined) {
     view.setUint32(
       dataOffset + CONFIG_OFFSET_END_DATE,
-      dateToYYYYMMDD(input.dates.end),
+      dateToYYYYMMDD(input.endDate),
       true,
     );
   }
@@ -229,7 +244,7 @@ function buildPairingsSection(
         pairing.black === 0 ? BYE_PLAYER_NUMBER : pairing.black,
         true,
       );
-      view.setUint16(offset + 4, resultKindToCode(pairing.result), true);
+      view.setUint16(offset + 4, resultCodeToTunx(pairing.result), true);
       // Bytes 6-20 are zero (already initialized)
       offset += PAIRING_RECORD_SIZE;
     }
@@ -239,6 +254,27 @@ function buildPairingsSection(
   section.set(trailer, offset);
 
   return section;
+}
+
+/** Flip a result code from white's perspective to black's perspective. */
+function flipResultCode(code: ResultCode): ResultCode {
+  switch (code) {
+    case '1': {
+      return '0';
+    }
+    case '0': {
+      return '1';
+    }
+    case '+': {
+      return '-';
+    }
+    case '-': {
+      return '+';
+    }
+    default: {
+      return code;
+    }
+  }
 }
 
 /**
@@ -271,48 +307,89 @@ export default function create(
     playerStrings: input.players.map((p) => buildPlayerStrings(p)),
   };
 
-  // Build structured tournament data from input
-  const players = input.players.map((p, index) => ({
-    club: p.club,
-    federation: p.federation,
-    fideId: p.fideId,
-    firstName: p.firstName,
-    kFactor: p.kFactor,
-    nationalId: p.nationalId,
-    nationalRating: p.nationalRating,
-    pairingNumber: index + 1,
-    rating: p.rating,
-    results: [],
-    sex: p.sex === 'F' ? ('F' as const) : undefined,
-    surname: p.surname,
-    title: p.title,
-  }));
+  // Build structured player data
+  const players = input.players.map((p, index) => {
+    const name =
+      p.firstName.length > 0 ? `${p.surname}, ${p.firstName}` : p.surname;
 
-  const rounds = input.rounds.map((r, ri) => ({
-    date: r.date,
-    number: ri + 1,
-    pairings: r.pairings.map((p, pi) => ({
-      black: p.black,
-      board: pi + 1,
-      result: p.result,
-      white: p.white,
-    })),
-  }));
+    const results = input.rounds.flatMap((round, roundIndex) => {
+      const pairing = round.pairings.find(
+        (pr) => pr.white === index + 1 || pr.black === index + 1,
+      );
+
+      if (pairing === undefined) return [];
+
+      const isWhite = pairing.white === index + 1;
+      const opponentId = isWhite ? pairing.black : pairing.white;
+      const whiteResult = pairing.result;
+      const myResult: ResultCode = isWhite
+        ? whiteResult
+        : flipResultCode(whiteResult);
+
+      return [
+        {
+          color: (isWhite ? 'w' : 'b') as 'b' | 'w',
+          opponentId: opponentId === 0 ? undefined : opponentId,
+          result: myResult,
+          round: roundIndex + 1,
+        },
+      ];
+    });
+
+    const points = results.reduce(
+      (sum, r) => sum + pointsFromResult(r.result),
+      0,
+    );
+
+    return {
+      federation: p.federation,
+      fideId: p.fideId === undefined ? undefined : String(p.fideId),
+      name,
+      pairingNumber: index + 1,
+      points,
+      rank: 0,
+      rating: p.rating,
+      results,
+      sex: p.sex === 'F' ? ('w' as const) : undefined,
+      title: p.title,
+    };
+  });
+
+  // Assign ranks
+  const sorted = players.toSorted((a, b) => b.points - a.points);
+  let currentRankValue = 1;
+  for (let index = 0; index < sorted.length; index++) {
+    const player = sorted[index];
+    const previous = sorted[index - 1];
+    if (
+      index > 0 &&
+      previous !== undefined &&
+      player !== undefined &&
+      player.points < previous.points
+    ) {
+      currentRankValue = index + 1;
+    }
+    if (player !== undefined) {
+      player.rank = currentRankValue;
+    }
+  }
 
   return {
     _raw: raw,
-    arbiters: input.arbiters ?? [],
+    chiefArbiter: input.chiefArbiter,
     city: input.city,
     currentRound: input.rounds.length,
-    dates: input.dates,
+    deputyArbiters: input.deputyArbiters,
+    endDate: input.endDate,
     federation: input.federation,
     header: template.header,
     name: input.name,
-    pairingSystem: 'dutch',
+    numberOfPlayers: players.length,
     players,
-    rounds,
+    rounds: input.rounds.length,
+    startDate: input.startDate,
     subtitle: input.subtitle,
-    tiebreaks: [],
+    tiebreaks: undefined,
     timeControl: input.timeControl,
     venue: input.venue,
   };

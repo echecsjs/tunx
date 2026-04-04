@@ -41,15 +41,14 @@ import {
 import BinaryReader from './reader.js';
 
 import type {
-  DateRange,
   Header,
+  NationalRating,
   Pairing,
   ParseOptions,
   Player,
   RawTournament,
-  Result,
-  ResultKind,
-  Round,
+  ResultCode,
+  RoundResult,
   Tiebreak,
   Title,
   Tournament,
@@ -76,32 +75,75 @@ function findMarker(buffer: Uint8Array, marker: number): number {
   return -1;
 }
 
-/** Map a TUNX result code to our ResultKind type. */
-function mapResultCode(code: number): ResultKind | undefined {
+/**
+ * Map a TUNX result code to a ResultCode from WHITE's perspective.
+ * Returns undefined for unknown codes.
+ */
+function mapResultCode(code: number): ResultCode | undefined {
   switch (code) {
     case RESULT_CODE.UNPAIRED: {
-      return 'unpaired';
+      return 'Z';
     }
     case RESULT_CODE.WHITE_WINS: {
-      return 'win';
+      return '1';
     }
     case RESULT_CODE.DRAW: {
-      return 'draw';
+      return '=';
     }
     case RESULT_CODE.BLACK_WINS: {
-      return 'loss';
+      return '0';
     }
     case RESULT_CODE.WHITE_WINS_FORFEIT: {
-      return 'forfeit-win';
+      return '+';
     }
     case RESULT_CODE.BLACK_WINS_FORFEIT: {
-      return 'forfeit-loss';
+      return '-';
     }
     case RESULT_CODE.UNPLAYED: {
-      return 'bye';
+      return 'F';
     }
     default: {
       return undefined;
+    }
+  }
+}
+
+/** Flip a result code from white's perspective to black's perspective. */
+function flipResultCode(code: ResultCode): ResultCode {
+  switch (code) {
+    case '1': {
+      return '0';
+    }
+    case '0': {
+      return '1';
+    }
+    case '+': {
+      return '-';
+    }
+    case '-': {
+      return '+';
+    }
+    default: {
+      return code;
+    }
+  }
+}
+
+/** Compute points earned from a ResultCode. */
+function pointsFromResult(code: ResultCode): number {
+  switch (code) {
+    case '1':
+    case '+':
+    case 'W': {
+      return 1;
+    }
+    case '=':
+    case 'H':
+    case 'D': {
+      return 0.5;
+    }
+    default: {
+      return 0;
     }
   }
 }
@@ -269,24 +311,20 @@ export default function parse(
   const startDate = formatDate(startDateRaw);
   const endDate = formatDate(endDateRaw);
 
-  const dates: DateRange | undefined =
-    startDate !== undefined && endDate !== undefined
-      ? { end: endDate, start: startDate }
-      : undefined;
-
   // ── Tiebreaks ────────────────────────────────────────────────────────────
   const tiebreakCount = configView.getUint8(
     configDataOffset + CONFIG_OFFSET_TIEBREAK_COUNT,
   );
 
-  const tiebreaks: Tiebreak[] = [];
+  const tiebreaks: string[] = [];
   for (let index = 0; index < tiebreakCount && index < 5; index++) {
     const code = configView.getUint16(
       configDataOffset + CONFIG_OFFSET_TIEBREAK_CODES + index * 2,
       true,
     );
     const lowByte = (code >> 8) & 0xff;
-    const mapped = TIEBREAK_CODE[lowByte as keyof typeof TIEBREAK_CODE];
+    const mapped: Tiebreak | undefined =
+      TIEBREAK_CODE[lowByte as keyof typeof TIEBREAK_CODE];
     if (mapped !== undefined) {
       tiebreaks.push(mapped);
     }
@@ -391,59 +429,53 @@ export default function parse(
       PLAYER_NUMERIC_OFFSET_NATIONAL_RATING,
       true,
     );
-    const ratingDelta = numericView.getUint16(
-      PLAYER_NUMERIC_OFFSET_RATING_DELTA,
-      true,
-    );
-    const ratingPeriod = numericView.getUint16(
-      PLAYER_NUMERIC_OFFSET_RATING_PERIOD,
-      true,
-    );
-    const categoryId = numericView.getUint16(
-      PLAYER_NUMERIC_OFFSET_CATEGORY_ID,
-      true,
-    );
-    const registrationId = numericView.getUint16(
-      PLAYER_NUMERIC_OFFSET_REGISTRATION_ID,
-      true,
-    );
+
+    // Read remaining numeric fields — kept in raw but not surfaced on Player
+    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_DELTA, true);
+    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_PERIOD, true);
+    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_CATEGORY_ID, true);
+    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_REGISTRATION_ID, true);
+    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX, true);
+    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_K_FACTOR, true);
+
     const fideId = numericView.getUint32(PLAYER_NUMERIC_OFFSET_FIDE_ID, true);
-    const alphabeticalIndex = numericView.getUint16(
-      PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX,
-      true,
-    );
-    const kFactor = numericView.getUint16(PLAYER_NUMERIC_OFFSET_K_FACTOR, true);
 
     const surname = strings[PLAYER_STRINGS.SURNAME] ?? '';
     const firstName = strings[PLAYER_STRINGS.FIRST_NAME] ?? '';
     const titleRaw = strings[PLAYER_STRINGS.TITLE] ?? '';
-    const club = strings[PLAYER_STRINGS.CLUB] ?? '';
     const federation = strings[PLAYER_STRINGS.FEDERATION] ?? '';
     const nationalId = strings[PLAYER_STRINGS.NATIONAL_ID] ?? '';
 
+    const name = firstName.length > 0 ? `${surname}, ${firstName}` : surname;
+
+    const nationalRatings: NationalRating[] | undefined =
+      nationalRating > 0
+        ? [
+            {
+              federation: federation || '',
+              nationalId: nonEmpty(nationalId),
+              pairingNumber: index + 1,
+              rating: nationalRating,
+            },
+          ]
+        : undefined;
+
     const player: Player = {
-      alphabeticalIndex: alphabeticalIndex > 0 ? alphabeticalIndex : undefined,
-      categoryId: categoryId > 0 ? categoryId : undefined,
-      club: nonEmpty(club),
       federation: nonEmpty(federation),
-      fideId: fideId > 0 ? fideId : undefined,
-      firstName,
-      kFactor: kFactor > 0 ? kFactor : undefined,
-      nationalId: nonEmpty(nationalId),
-      nationalRating: nationalRating > 0 ? nationalRating : undefined,
+      fideId: fideId > 0 ? String(fideId) : undefined,
+      name,
+      nationalRatings,
       pairingNumber: index + 1,
+      points: 0,
+      rank: 0,
       rating:
         fideRating > 0
           ? fideRating
           : nationalRating > 0
             ? nationalRating
             : undefined,
-      ratingDelta: ratingDelta > 0 ? ratingDelta : undefined,
-      ratingPeriod: ratingPeriod > 0 ? ratingPeriod : undefined,
-      registrationId: registrationId > 0 ? registrationId : undefined,
       results: [],
-      sex: sexByte === 1 ? 'F' : undefined,
-      surname,
+      sex: sexByte === 1 ? 'w' : undefined,
       title: toTitle(titleRaw),
     };
 
@@ -451,8 +483,10 @@ export default function parse(
   }
 
   // Rounds and pairings
-  const rounds: Round[] = [];
+  const roundDates: string[] = [];
+  const roundTimes: string[] = [];
   const pairingsPerRound = playerCount > 0 ? Math.ceil(playerCount / 2) : 0;
+  const allPairings: Pairing[][] = [];
 
   for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
     const roundPairings: Pairing[] = [];
@@ -482,12 +516,12 @@ export default function parse(
       const white = pairingView.getUint16(0, true);
       const black = pairingView.getUint16(2, true);
       const resultCode = pairingView.getUint16(4, true);
-      const resultKind = mapResultCode(resultCode);
+      const whiteResultCode = mapResultCode(resultCode);
 
       const pairing: Pairing = {
         black: black === BYE_PLAYER_NUMBER ? 0 : black,
         board: pairingIndex - startPairing + 1,
-        result: resultKind,
+        result: whiteResultCode,
         white,
       };
 
@@ -498,86 +532,24 @@ export default function parse(
       const blackPlayer =
         black === BYE_PLAYER_NUMBER ? undefined : players[black - 1];
 
-      if (whitePlayer !== undefined && resultKind !== undefined) {
-        let whiteKind: ResultKind;
-
-        switch (resultKind) {
-          case 'win': {
-            whiteKind = 'win';
-            break;
-          }
-          case 'draw': {
-            whiteKind = 'draw';
-            break;
-          }
-          case 'loss': {
-            whiteKind = 'loss';
-            break;
-          }
-          case 'forfeit-win': {
-            whiteKind = 'forfeit-win';
-            break;
-          }
-          case 'forfeit-loss': {
-            whiteKind = 'forfeit-loss';
-            break;
-          }
-          case 'bye': {
-            whiteKind = 'bye';
-            break;
-          }
-          default: {
-            whiteKind = resultKind;
-          }
-        }
-
-        const whiteResult: Result = {
-          color: 'white',
-          kind: whiteKind,
-          opponent: black === BYE_PLAYER_NUMBER ? undefined : black,
+      if (whitePlayer !== undefined && whiteResultCode !== undefined) {
+        const whiteResult: RoundResult = {
+          color: 'w',
+          opponentId: black === BYE_PLAYER_NUMBER ? undefined : black,
+          result: whiteResultCode,
           round: roundIndex + 1,
         };
 
         whitePlayer.results.push(whiteResult);
       }
 
-      if (blackPlayer !== undefined && resultKind !== undefined) {
-        let blackKind: ResultKind;
+      if (blackPlayer !== undefined && whiteResultCode !== undefined) {
+        const blackResultCode = flipResultCode(whiteResultCode);
 
-        switch (resultKind) {
-          case 'win': {
-            blackKind = 'loss';
-            break;
-          }
-          case 'draw': {
-            blackKind = 'draw';
-            break;
-          }
-          case 'loss': {
-            blackKind = 'win';
-            break;
-          }
-          case 'forfeit-win': {
-            blackKind = 'forfeit-loss';
-            break;
-          }
-          case 'forfeit-loss': {
-            blackKind = 'forfeit-win';
-            break;
-          }
-          case 'bye': {
-            blackKind = 'bye';
-            break;
-          }
-          default: {
-            blackKind = resultKind;
-          }
-        }
-
-        const blackResult: Result = {
-          color: 'black',
-          kind: blackKind,
-          opponent: white,
+        const blackResult: RoundResult = {
+          color: 'b',
+          opponentId: white,
+          result: blackResultCode,
           round: roundIndex + 1,
         };
 
@@ -585,10 +557,7 @@ export default function parse(
       }
     }
 
-    rounds.push({
-      number: roundIndex + 1,
-      pairings: roundPairings,
-    });
+    allPairings.push(roundPairings);
   }
 
   // ── 8b. Extract round dates from config section ──────────────────────────
@@ -618,10 +587,6 @@ export default function parse(
 
   if (roundBlockDateOffset !== -1 && totalRounds >= 2) {
     // Find the second round's date to compute block size.
-    // Within each round block, multiple date fields may be present close
-    // together (≤ 20 bytes apart). The next round block starts further away
-    // (typically 100+ bytes). We skip ahead by 32 bytes from the first found
-    // date to land past any within-block duplicates before resuming the scan.
     let secondDateOffset = -1;
 
     for (
@@ -652,10 +617,8 @@ export default function parse(
           const dateValue = configDataView.getUint32(dateOffset, true);
           const dateString = formatDate(dateValue);
 
-          const round = rounds[roundIndex];
-
-          if (dateString !== undefined && round !== undefined) {
-            round.date = dateString;
+          if (dateString !== undefined) {
+            roundDates[roundIndex] = dateString;
           }
         }
       }
@@ -665,8 +628,8 @@ export default function parse(
     const dateValue = configDataView.getUint32(roundBlockDateOffset, true);
     const dateString = formatDate(dateValue);
 
-    if (dateString !== undefined && rounds[0] !== undefined) {
-      rounds[0].date = dateString;
+    if (dateString !== undefined) {
+      roundDates[0] = dateString;
     }
   }
 
@@ -695,20 +658,46 @@ export default function parse(
       const byteCount = charCount * 2;
       if (a3Pos + byteCount > configBytes.byteLength) break;
 
-      const round = rounds[roundIndex];
-      if (charCount > 0 && round !== undefined) {
+      if (charCount > 0) {
         const decoder = new TextDecoder('utf-16le');
         const timeString = decoder.decode(
           configBytes.subarray(a3Pos, a3Pos + byteCount),
         );
         if (timeString.length > 0) {
-          round.time = timeString;
+          roundTimes[roundIndex] = timeString;
         }
       }
       a3Pos += byteCount;
 
       // Skip 106 bytes of fixed round data
       a3Pos += 106;
+    }
+  }
+
+  // ── 8d. Compute player points and ranks ───────────────────────────────────
+  for (const player of players) {
+    player.points = player.results.reduce(
+      (sum, r) => sum + pointsFromResult(r.result),
+      0,
+    );
+  }
+
+  // Sort by points descending to assign ranks (ties share the same rank)
+  const sorted = players.toSorted((a, b) => b.points - a.points);
+  let currentRankValue = 1;
+  for (let index = 0; index < sorted.length; index++) {
+    const player = sorted[index];
+    const previous = sorted[index - 1];
+    if (
+      index > 0 &&
+      previous !== undefined &&
+      player !== undefined &&
+      player.points < previous.points
+    ) {
+      currentRankValue = index + 1;
+    }
+    if (player !== undefined) {
+      player.rank = currentRankValue;
     }
   }
 
@@ -722,20 +711,10 @@ export default function parse(
   const federation = nonEmpty(getMetadata(METADATA.FEDERATION));
   const timeControl = nonEmpty(getMetadata(METADATA.TIME_CONTROL));
 
-  // Arbiters
-  const arbiters = [];
-
-  const chiefArbiterRaw = nonEmpty(getMetadata(METADATA.CHIEF_ARBITER));
-
-  if (chiefArbiterRaw !== undefined) {
-    arbiters.push({ name: chiefArbiterRaw, role: 'chief' as const });
-  }
-
+  const chiefArbiter = nonEmpty(getMetadata(METADATA.CHIEF_ARBITER));
   const deputyArbiterRaw = nonEmpty(getMetadata(METADATA.DEPUTY_ARBITER));
-
-  if (deputyArbiterRaw !== undefined) {
-    arbiters.push({ name: deputyArbiterRaw, role: 'deputy' as const });
-  }
+  const deputyArbiters: string[] | undefined =
+    deputyArbiterRaw === undefined ? undefined : [deputyArbiterRaw];
 
   // ── 9. Assemble raw data for round-trip ──────────────────────────────────
   const raw: RawTournament = {
@@ -750,18 +729,23 @@ export default function parse(
 
   return {
     _raw: raw,
-    arbiters,
+    chiefArbiter,
     city,
     currentRound,
-    dates,
+    deputyArbiters,
+    endDate,
     federation,
     header,
     name,
-    pairingSystem: 'dutch',
+    numberOfPlayers: players.length,
+    pairings: allPairings,
     players,
-    rounds,
+    roundDates: roundDates.length > 0 ? roundDates : undefined,
+    roundTimes: roundTimes.length > 0 ? roundTimes : undefined,
+    rounds: totalRounds,
+    startDate,
     subtitle: subtitleShort,
-    tiebreaks,
+    tiebreaks: tiebreaks.length > 0 ? tiebreaks : undefined,
     timeControl,
     venue,
   };
