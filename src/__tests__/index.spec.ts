@@ -133,6 +133,10 @@ describe('parse()', () => {
       expect(tournament?.rounds[0]?.date).toBe('2026-03-28');
     });
 
+    it('has no round time set', () => {
+      expect(tournament?.rounds[0]?.time).toBeUndefined();
+    });
+
     it('has 5 tiebreaks', () => {
       expect(tournament?.tiebreaks).toHaveLength(5);
       expect(tournament?.tiebreaks).toEqual([
@@ -286,6 +290,14 @@ describe('parse()', () => {
 
     it('has round 9 date of 2023-12-08', () => {
       expect(tournament?.rounds[8]?.date).toBe('2023-12-08');
+    });
+
+    it('has round 1 time of 16:00', () => {
+      expect(tournament?.rounds[0]?.time).toBe('16:00');
+    });
+
+    it('has round 9 time of 10:00', () => {
+      expect(tournament?.rounds[8]?.time).toBe('10:00');
     });
 
     describe('header', () => {

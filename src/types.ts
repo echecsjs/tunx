@@ -127,6 +127,7 @@ interface Round {
   date?: string;
   number: number;
   pairings: Pairing[];
+  time?: string;
 }
 
 interface Tournament {

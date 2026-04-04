@@ -670,6 +670,48 @@ export default function parse(
     }
   }
 
+  // ── 8c. Extract round start times from A3 sub-section ────────────────────
+  // Find A3 marker within config bytes
+  let a3Offset = -1;
+  for (let index = 0; index < configBytes.byteLength - 3; index++) {
+    if (
+      configBytes[index] === 0xa3 &&
+      configBytes[index + 1] === 0xff &&
+      configBytes[index + 2] === 0x89 &&
+      configBytes[index + 3] === 0x44
+    ) {
+      a3Offset = index + 4; // skip marker
+      break;
+    }
+  }
+
+  if (a3Offset !== -1) {
+    let a3Pos = a3Offset;
+    for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
+      // Read string: U16LE char count + chars
+      if (a3Pos + 2 > configBytes.byteLength) break;
+      const charCount = configDataView.getUint16(a3Pos, true);
+      a3Pos += 2;
+      const byteCount = charCount * 2;
+      if (a3Pos + byteCount > configBytes.byteLength) break;
+
+      const round = rounds[roundIndex];
+      if (charCount > 0 && round !== undefined) {
+        const decoder = new TextDecoder('utf-16le');
+        const timeString = decoder.decode(
+          configBytes.subarray(a3Pos, a3Pos + byteCount),
+        );
+        if (timeString.length > 0) {
+          round.time = timeString;
+        }
+      }
+      a3Pos += byteCount;
+
+      // Skip 106 bytes of fixed round data
+      a3Pos += 106;
+    }
+  }
+
   // Extract metadata fields
   const getMetadata = (index: number): string => metadataStrings[index] ?? '';
 
