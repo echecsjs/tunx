@@ -14,11 +14,26 @@ after completing any work.
 ## Project Overview
 
 Binary parser and serializer for SwissManager `.TUNX` files. Zero runtime
-dependencies. Named exports: `parse(input, options?) → Tournament | undefined`
-and `stringify(tournament) → Uint8Array`. `parse()` never throws; failures
-return `undefined` and call `options.onError`. Recoverable issues (e.g. missing
-players, empty strings) call `options.onWarning`. `stringify()` requires
-`tournament._raw` and throws `RangeError` if it is absent.
+dependencies. Named exports:
+
+- `parse(input, options?) → Tournament | undefined` — decodes a TUNX binary.
+  Never throws; failures return `undefined` and call `options.onError`.
+  Recoverable issues (e.g. missing players, empty strings) call
+  `options.onWarning`.
+- `stringify(tournament) → Uint8Array` — re-encodes a parsed tournament.
+  Requires `tournament._raw` and throws `RangeError` if it is absent.
+- `create(template, input) → Tournament` — constructs a new `Tournament` from a
+  template TUNX file and a plain-object description.
+
+Output types align with the `@echecs/trf` model:
+
+- `Tournament` has flat fields: `chiefArbiter`, `startDate`/`endDate`, `rounds`
+  (count), `roundDates[]`, `pairings[][]`, plus the usual name/venue/arbiter
+  metadata.
+- `Player` has: `name` (combined "Surname, Firstname"), `fideId` (string), `sex`
+  (`'m'` | `'w'`), `points`, `rank`, `results: RoundResult[]`.
+- Results use `ResultCode` (`'1'`, `'0'`, `'='`, `'+'`, `'-'`, etc.) matching
+  TRF conventions.
 
 Full round-trip fidelity is the primary design constraint — parsing a file and
 re-serializing it must produce byte-for-byte identical output to the original.
@@ -208,6 +223,8 @@ of every TUNX file.
 
 - **ESM-only** — the package ships only ESM. Do not add a CJS build.
 - No runtime dependencies — keep it that way.
+- Types align with the `@echecs/trf` model — `Tournament`, `Player`,
+  `RoundResult`, and `ResultCode` follow TRF conventions.
 - `parse()` and `stringify()` are synchronous — do not introduce async.
 - `src/index.ts` is a re-export barrel. Logic lives in `src/parse.ts` and
   `src/stringify.ts`.

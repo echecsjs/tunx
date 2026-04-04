@@ -21,6 +21,10 @@ Last updated: 2026-04-04
       E3 = file terminator (always empty). Documented in AGENTS.md.
 - [x] ~~Decode header 0x24.~~ Per-installation tournament counter — not exposed
       on the API as it's internal to SwissManager.
+- [x] ~~Align output types with @echecs/trf model.~~ Tournament, Player, and
+      Result types restructured. Player.name combined, sex uses 'm'/'w', fideId
+      is string, results use ResultCode, Tournament has flat structure with
+      roundDates/pairings arrays.
 
 ## Residual unknowns
 
