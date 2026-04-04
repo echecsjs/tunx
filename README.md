@@ -1,8 +1,9 @@
 # @echecs/tunx
 
-Parse and stringify SwissManager `.TUNX` binary tournament files. Zero
-dependencies, strict TypeScript, full round-trip fidelity. Output types align
-with [`@echecs/trf`](https://www.npmjs.com/package/@echecs/trf).
+Parse and stringify [Swiss-Manager](https://swiss-manager.at/) `.TUNX` binary
+tournament files. Zero dependencies, strict TypeScript, full round-trip
+fidelity. Output types align with
+[`@echecs/trf`](https://www.npmjs.com/package/@echecs/trf).
 
 ## Installation
 
@@ -71,6 +72,33 @@ function stringify(tournament: Tournament): Uint8Array;
 - Throws `RangeError` if `_raw` is missing.
 - `stringify(parse(input))` produces output identical to `input`.
 
+### `ParseOptions`
+
+```typescript
+interface ParseOptions {
+  onError?: (error: ParseError) => void;
+  onWarning?: (warning: ParseWarning) => void;
+}
+```
+
+### `ParseError`
+
+```typescript
+interface ParseError {
+  message: string;
+  offset?: number;
+}
+```
+
+### `ParseWarning`
+
+```typescript
+interface ParseWarning {
+  message: string;
+  offset?: number;
+}
+```
+
 ## Types
 
 Output types are compatible with
@@ -80,24 +108,29 @@ Output types are compatible with
 
 ```typescript
 interface Tournament {
-  _raw: RawTournament;
+  // TRF-compatible fields
   chiefArbiter?: string;
   city?: string;
-  currentRound?: number;
+  deputyArbiters?: string[];
   endDate?: string;
   federation?: string;
-  header?: Header;
   name?: string;
   numberOfPlayers?: number;
-  pairings?: Pairing[][];
   players: Player[];
   roundDates?: string[];
-  roundTimes?: string[];
   rounds: number;
   startDate?: string;
-  subtitle?: string;
   tiebreaks?: string[];
   timeControl?: string;
+  tournamentType?: string;
+
+  // TUNX-specific extensions
+  _raw: RawTournament;
+  currentRound?: number;
+  header?: Header;
+  pairings?: Pairing[][];
+  roundTimes?: string[];
+  subtitle?: string;
   venue?: string;
 }
 ```
@@ -106,6 +139,7 @@ interface Tournament {
 
 ```typescript
 interface Player {
+  birthDate?: string;
   federation?: string;
   fideId?: string;
   name: string;
@@ -115,7 +149,7 @@ interface Player {
   rank: number;
   rating?: number;
   results: RoundResult[];
-  sex?: 'm' | 'w';
+  sex?: Sex;
   title?: Title;
 }
 ```
@@ -125,9 +159,64 @@ interface Player {
 ```typescript
 interface RoundResult {
   color: 'b' | 'w' | '-';
-  opponentId: number | undefined;
+  opponentId?: number;
   result: ResultCode;
   round: number;
+}
+```
+
+### `Pairing`
+
+Per-board pairing record, grouped by round in `Tournament.pairings`.
+
+```typescript
+interface Pairing {
+  black: number;
+  board: number;
+  result?: ResultCode;
+  white: number;
+}
+```
+
+### `Header`
+
+TUNX-specific header metadata. Available on `Tournament.header`.
+
+```typescript
+interface Header {
+  installSignature: Uint8Array;
+  installedAt?: Date;
+  licenseHash: Uint8Array;
+  savedAt?: Date;
+  tournamentId: number;
+}
+```
+
+### `NationalRating`
+
+```typescript
+interface NationalRating {
+  federation: string;
+  nationalId?: string;
+  pairingNumber: number;
+  rating: number;
+}
+```
+
+### `RawTournament`
+
+Preserved binary chunks for byte-exact round-trip via `stringify()`. Not
+intended for direct use.
+
+```typescript
+interface RawTournament {
+  configBytes: Uint8Array;
+  headerBytes: Uint8Array;
+  metadataStrings: string[];
+  pairingBytes: Uint8Array[];
+  pairingsSection: Uint8Array;
+  playerNumericBytes: Uint8Array[];
+  playerStrings: string[][];
 }
 ```
 
@@ -159,6 +248,38 @@ type ResultCode =
 | `H`  | Half-point bye            |
 | `Z`  | Zero-point bye / unpaired |
 | `U`  | Unplayed                  |
+
+### `Sex`
+
+```typescript
+type Sex = 'm' | 'w';
+```
+
+### `Tiebreak`
+
+Known tiebreak identifiers used as values in `Tournament.tiebreaks`.
+
+```typescript
+type Tiebreak =
+  | 'average-rating'
+  | 'buchholz'
+  | 'buchholz-cut-1'
+  | 'buchholz-cut-2'
+  | 'buchholz-cut-3'
+  | 'direct-encounter'
+  | 'koya'
+  | 'median-buchholz'
+  | 'number-of-wins'
+  | 'performance-rating'
+  | 'progressive'
+  | 'sonneborn-berger';
+```
+
+### `Title`
+
+```typescript
+type Title = 'CM' | 'FM' | 'GM' | 'IM' | 'WCM' | 'WFM' | 'WGM' | 'WIM';
+```
 
 ## TUNX Format
 
