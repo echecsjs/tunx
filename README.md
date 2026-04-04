@@ -1,7 +1,8 @@
 # @echecs/tunx
 
 Parse and stringify SwissManager `.TUNX` binary tournament files. Zero
-dependencies, strict TypeScript, full round-trip fidelity.
+dependencies, strict TypeScript, full round-trip fidelity. Output types align
+with [`@echecs/trf`](https://www.npmjs.com/package/@echecs/trf).
 
 ## Installation
 
@@ -16,23 +17,24 @@ import { parse, stringify } from '@echecs/tunx';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 // Parse a TUNX file
-const buffer = new Uint8Array(readFileSync('tournament.TUNX').buffer);
+const buffer = new Uint8Array(readFileSync('tournament.TUNX'));
 const tournament = parse(buffer);
 
 if (tournament) {
   console.log(tournament.name); // "IV Elllobregat Open Chess Tmnt Grupo A"
+  console.log(tournament.rounds); // 9
   console.log(tournament.players.length); // 210
-  console.log(tournament.rounds.length); // 9
 
-  // Access player data
+  // Player data
   const player = tournament.players[0];
-  console.log(player.surname); // "Fedoseev"
-  console.log(player.firstName); // "Vladimir"
+  console.log(player.name); // "Fedoseev, Vladimir"
   console.log(player.rating); // 2675
-  console.log(player.fideId); // 24130737
+  console.log(player.fideId); // "24130737"
   console.log(player.title); // "GM"
+  console.log(player.points); // 6.5
+  console.log(player.rank); // 1
 
-  // Round-trip: write back to TUNX
+  // Round-trip: write back byte-for-byte identical
   const output = stringify(tournament);
   writeFileSync('tournament-copy.TUNX', output);
 }
@@ -42,7 +44,7 @@ if (tournament) {
 
 ### `parse(input, options?)`
 
-Parse a TUNX binary buffer into a `Tournament` object.
+Decode a TUNX binary buffer into a `Tournament` object.
 
 ```typescript
 function parse(
@@ -51,16 +53,14 @@ function parse(
 ): Tournament | undefined;
 ```
 
-- Returns `undefined` if the magic bytes don't match or the structure is fatally
-  corrupted.
-- Calls `options.onError` before returning `undefined` so consumers know why.
-- Calls `options.onWarning` for recoverable issues (unexpected data, truncated
-  records) — parsing continues.
+- Returns `undefined` for unrecoverable failures (bad magic, missing markers).
+- Calls `options.onError` before returning `undefined`.
+- Calls `options.onWarning` for recoverable issues — parsing continues.
 - Never throws.
 
 ### `stringify(tournament)`
 
-Serialize a `Tournament` object back to TUNX binary.
+Re-encode a `Tournament` back to TUNX binary.
 
 ```typescript
 function stringify(tournament: Tournament): Uint8Array;
@@ -69,33 +69,34 @@ function stringify(tournament: Tournament): Uint8Array;
 - Requires `tournament._raw` (populated by `parse`) for byte-exact
   reconstruction.
 - Throws `RangeError` if `_raw` is missing.
-- Produces output identical to the original input: `stringify(parse(input))` ===
-  `input`.
+- `stringify(parse(input))` produces output identical to `input`.
 
-### `ParseOptions`
+## Types
 
-```typescript
-interface ParseOptions {
-  onError?: (error: ParseError) => void;
-  onWarning?: (warning: ParseWarning) => void;
-}
-```
+Output types are compatible with
+[`@echecs/trf`](https://www.npmjs.com/package/@echecs/trf).
 
 ### `Tournament`
 
 ```typescript
 interface Tournament {
   _raw: RawTournament;
-  arbiters: Arbiter[];
+  chiefArbiter?: string;
   city?: string;
-  dates?: DateRange;
+  currentRound?: number;
+  endDate?: string;
   federation?: string;
-  name: string;
-  pairingSystem: PairingSystem;
+  header?: Header;
+  name?: string;
+  numberOfPlayers?: number;
+  pairings?: Pairing[][];
   players: Player[];
-  rounds: Round[];
+  roundDates?: string[];
+  roundTimes?: string[];
+  rounds: number;
+  startDate?: string;
   subtitle?: string;
-  tiebreaks: Tiebreak[];
+  tiebreaks?: string[];
   timeControl?: string;
   venue?: string;
 }
@@ -105,91 +106,76 @@ interface Tournament {
 
 ```typescript
 interface Player {
-  birthYear?: number;
-  club?: string;
   federation?: string;
-  fideId?: number;
-  firstName: string;
-  group?: string;
-  nationalId?: string;
+  fideId?: string;
+  name: string;
+  nationalRatings?: NationalRating[];
   pairingNumber: number;
+  points: number;
+  rank: number;
   rating?: number;
-  results: Result[];
-  sex?: 'F' | 'M';
-  surname: string;
+  results: RoundResult[];
+  sex?: 'm' | 'w';
   title?: Title;
 }
 ```
 
-### `Round`
+### `RoundResult`
 
 ```typescript
-interface Round {
-  date?: string;
-  number: number;
-  pairings: Pairing[];
-}
-```
-
-### `Pairing`
-
-```typescript
-interface Pairing {
-  black: number;
-  board: number;
-  result?: ResultKind;
-  white: number;
-}
-```
-
-### `Result`
-
-```typescript
-interface Result {
-  color?: 'black' | 'white';
-  kind: ResultKind;
-  opponent?: number;
+interface RoundResult {
+  color: 'b' | 'w' | '-';
+  opponentId: number | undefined;
+  result: ResultCode;
   round: number;
 }
 ```
 
-### Types
+### `ResultCode`
 
 ```typescript
-type ResultKind =
-  | 'bye'
-  | 'double-forfeit'
-  | 'draw'
-  | 'forfeit-loss'
-  | 'forfeit-win'
-  | 'half-bye'
-  | 'loss'
-  | 'unpaired'
-  | 'win';
-
-type Title = 'CM' | 'FM' | 'GM' | 'IM' | 'WCM' | 'WFM' | 'WGM' | 'WIM';
-type PairingSystem = 'burstein' | 'dutch' | 'lim' | 'round-robin';
+type ResultCode =
+  | '+'
+  | '-'
+  | '0'
+  | '1'
+  | '='
+  | 'D'
+  | 'F'
+  | 'H'
+  | 'U'
+  | 'W'
+  | 'Z';
 ```
+
+| Code | Meaning                   |
+| ---- | ------------------------- |
+| `1`  | Win                       |
+| `0`  | Loss                      |
+| `=`  | Draw                      |
+| `+`  | Forfeit win               |
+| `-`  | Forfeit loss              |
+| `F`  | Full-point bye            |
+| `H`  | Half-point bye            |
+| `Z`  | Zero-point bye / unpaired |
+| `U`  | Unplayed                  |
 
 ## TUNX Format
 
 TUNX is the proprietary binary format used by
-[Swiss-Manager](https://swiss-manager.at/) for tournament files. The format uses
-UTF-16LE strings with U16LE length prefixes and little-endian integers
-throughout.
+[Swiss-Manager](https://swiss-manager.at/). The format uses little-endian
+integers and UTF-16LE strings with U16LE length prefixes.
 
 ### File Structure
 
-1. **Header** (108 bytes) — magic bytes `93 FF 89 44`, checksum block,
-   tournament ID
-2. **Metadata strings** — tournament name, subtitle, arbiters, city, time
-   control, federation
-3. **Config section** (marker `95 FF 89 44`) — round count, player count,
-   pairing settings
-4. **Player records** (marker `A5 FF 89 44`) — 30 strings + 110-byte numeric
-   block per player
-5. **Pairings** (marker `B3 FF 89 44`) — 21-byte records with white/black
-   pairing numbers and result codes
+1. **Header** (108 bytes) — magic `93 FF 89 44`, tournament ID, license data
+2. **Metadata strings** — name, subtitle, arbiters, city, time control
+3. **Config section** (`95 FF 89 44`) — rounds, players, dates, tiebreaks
+4. **A3 sub-section** (`A3 FF 89 44`) — per-round schedule (dates, times)
+5. **Player records** (`A5 FF 89 44`) — 30 strings + 110-byte numeric block
+6. **Pairings** (`B3 FF 89 44`) — 21-byte records per pairing
+7. **D3 section** (`D3 FF 89 44`) — section offset table
+8. **E3 section** (`E3 FF 89 44`) — file terminator
 
 ## License
 
