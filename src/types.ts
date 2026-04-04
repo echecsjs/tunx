@@ -8,46 +8,6 @@ interface RawTournament {
   playerStrings: string[][];
 }
 
-interface CreateInput {
-  chiefArbiter?: string;
-  city?: string;
-  deputyArbiters?: string[];
-  endDate?: string;
-  federation?: string;
-  name: string;
-  players: CreatePlayer[];
-  rounds: CreateRound[];
-  startDate?: string;
-  subtitle?: string;
-  timeControl?: string;
-  venue?: string;
-}
-
-interface CreatePairing {
-  black: number;
-  result: ResultCode;
-  white: number;
-}
-
-interface CreatePlayer {
-  club?: string;
-  federation?: string;
-  fideId?: number;
-  firstName: string;
-  kFactor?: number;
-  nationalId?: string;
-  nationalRating?: number;
-  rating?: number;
-  sex?: 'F' | 'M';
-  surname: string;
-  title?: Title;
-}
-
-interface CreateRound {
-  date?: string;
-  pairings: CreatePairing[];
-}
-
 interface Header {
   /** High-entropy bytes 0x34–0x67, likely tied to SW license/installation. */
   installSignature: Uint8Array;
@@ -177,10 +137,6 @@ type Sex = 'm' | 'w';
 type Title = 'CM' | 'FM' | 'GM' | 'IM' | 'WCM' | 'WFM' | 'WGM' | 'WIM';
 
 export type {
-  CreateInput,
-  CreatePairing,
-  CreatePlayer,
-  CreateRound,
   Header,
   NationalRating,
   Pairing,
