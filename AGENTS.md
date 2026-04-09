@@ -219,6 +219,25 @@ of every TUNX file.
 
 ---
 
+## Common Data Model
+
+`@echecs/tunx` and `@echecs/trf` both produce and consume a `Tournament` type
+with compatible structure. The core shared shape:
+
+- `Tournament` — top-level container with `players: Player[]`, `rounds: number`,
+  and optional metadata (`name`, `chiefArbiter`, `startDate`, `endDate`, etc.).
+- `Player` — structurally identical across both packages: `name`, `pairingNumber`,
+  `points`, `rank`, `results: RoundResult[]`, plus optional FIDE fields.
+- `RoundResult` — `round`, `color`, `opponentId`, `result: ResultCode`.
+- `ResultCode` — same union: `'1'`, `'0'`, `'='`, `'+'`, `'-'`, `'W'`, `'D'`,
+  `'L'`, etc.
+
+TRF's `Tournament` is a superset (teams, scoring systems, acceleration, byes).
+TUNX's `Tournament` adds format-specific fields (`_raw`, `pairings`, `header`).
+The types are duplicated, not shared — each package defines its own.
+
+---
+
 ## Architecture Notes
 
 - **ESM-only** — the package ships only ESM. Do not add a CJS build.
