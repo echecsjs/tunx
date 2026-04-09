@@ -244,8 +244,10 @@ type ResultCode =
 | `=`  | Draw                      |
 | `+`  | Forfeit win               |
 | `-`  | Forfeit loss              |
+| `D`  | Draw by forfeit           |
 | `F`  | Full-point bye            |
 | `H`  | Half-point bye            |
+| `W`  | Win by forfeit (special)  |
 | `Z`  | Zero-point bye / unpaired |
 | `U`  | Unplayed                  |
 

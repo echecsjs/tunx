@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-04-09
+
+### Fixed
+
+- Added missing `D` and `W` descriptions to the `ResultCode` meaning table.
+
 ## 0.1.1 — 2026-04-04
 
 ### Added
