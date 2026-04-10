@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import nodePath from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { parse, stringify } from '../index.js';
+import { parse } from '../index.js';
+import stringify from '../stringify.js';
 
 const { join } = nodePath;
 const FIXTURES = join(import.meta.dirname, 'fixtures');
