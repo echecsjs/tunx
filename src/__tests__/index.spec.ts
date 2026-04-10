@@ -3,7 +3,6 @@ import nodePath from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { parse } from '../index.js';
-import stringify from '../stringify.js';
 
 const { join } = nodePath;
 const FIXTURES = join(import.meta.dirname, 'fixtures');
@@ -140,16 +139,6 @@ describe('parse()', () => {
         'buchholz-cut-1',
         'number-of-wins',
       ]);
-    });
-
-    it('stores raw data for round-trip', () => {
-      expect(tournament?._raw).toBeDefined();
-      expect(tournament?._raw.headerBytes).toBeInstanceOf(Uint8Array);
-      expect(tournament?._raw.headerBytes).toHaveLength(0x6c);
-      expect(tournament?._raw.metadataStrings).toBeInstanceOf(Array);
-      expect(tournament?._raw.configBytes).toBeInstanceOf(Uint8Array);
-      expect(tournament?._raw.playerStrings).toHaveLength(29);
-      expect(tournament?._raw.playerNumericBytes).toHaveLength(29);
     });
 
     describe('header', () => {
@@ -324,38 +313,5 @@ describe('parse()', () => {
       const unpaired = round6Pairings?.filter((p) => p.result === 'Z');
       expect(unpaired?.length).toBeGreaterThan(0);
     });
-  });
-});
-
-describe('stringify()', () => {
-  it('throws RangeError if _raw is missing', () => {
-    const bad = {} as Parameters<typeof stringify>[0];
-    expect(() => stringify(bad)).toThrow(RangeError);
-  });
-});
-
-describe('round-trip', () => {
-  it('sample.TUNX round-trips to identical bytes', () => {
-    const buffer = fixture('sample.TUNX');
-    const tournament = parse(buffer);
-    expect(tournament).toBeDefined();
-    const output = stringify(tournament!);
-    expect(output).toEqual(buffer);
-  });
-
-  it('abs_fem_1378181.TUNX round-trips to identical bytes', () => {
-    const buffer = fixture('abs_fem_1378181.TUNX');
-    const tournament = parse(buffer);
-    expect(tournament).toBeDefined();
-    const output = stringify(tournament!);
-    expect(output).toEqual(buffer);
-  });
-
-  it('2023_elllobregat_a_753347.TUNX round-trips to identical bytes', () => {
-    const buffer = fixture('2023_elllobregat_a_753347.TUNX');
-    const tournament = parse(buffer);
-    expect(tournament).toBeDefined();
-    const output = stringify(tournament!);
-    expect(output).toEqual(buffer);
   });
 });

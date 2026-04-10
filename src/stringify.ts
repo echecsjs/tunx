@@ -1,6 +1,10 @@
 import BinaryWriter from './writer.js';
 
-import type { Tournament } from './types.js';
+import type { RawTournament, Tournament } from './types.js';
+
+interface RawTournamentInput extends Tournament {
+  _raw: RawTournament;
+}
 
 /**
  * Reconstruct a TUNX binary file from a parsed `Tournament`.
@@ -10,7 +14,7 @@ import type { Tournament } from './types.js';
  * @param tournament - A `Tournament` produced by `parse()`.
  * @returns The raw bytes of the corresponding `.TUNX` file.
  */
-export default function stringify(tournament: Tournament): Uint8Array {
+export default function stringify(tournament: RawTournamentInput): Uint8Array {
   if (!tournament._raw) {
     throw new RangeError(
       'stringify() requires tournament._raw — only tournaments produced by parse() are supported',

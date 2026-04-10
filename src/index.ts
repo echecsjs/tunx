@@ -7,7 +7,6 @@ export type {
   ParseOptions,
   ParseWarning,
   Player,
-  RawTournament,
   ResultCode,
   RoundResult,
   Sex,

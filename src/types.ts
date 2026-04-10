@@ -92,7 +92,6 @@ interface Tournament {
   tournamentType?: string;
 
   // TUNX-specific extensions
-  _raw: RawTournament;
   currentRound?: number;
   header?: Header;
   pairings?: Pairing[][];

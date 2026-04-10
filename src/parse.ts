@@ -46,7 +46,6 @@ import type {
   Pairing,
   ParseOptions,
   Player,
-  RawTournament,
   ResultCode,
   RoundResult,
   Tiebreak,
@@ -716,19 +715,7 @@ export default function parse(
   const deputyArbiters: string[] | undefined =
     deputyArbiterRaw === undefined ? undefined : [deputyArbiterRaw];
 
-  // ── 9. Assemble raw data for round-trip ──────────────────────────────────
-  const raw: RawTournament = {
-    configBytes,
-    headerBytes,
-    metadataStrings,
-    pairingBytes,
-    pairingsSection,
-    playerNumericBytes,
-    playerStrings,
-  };
-
   return {
-    _raw: raw,
     chiefArbiter,
     city,
     currentRound,
