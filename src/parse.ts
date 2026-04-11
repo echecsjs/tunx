@@ -532,7 +532,8 @@ export default function parse(
       if (whitePlayer !== undefined && whiteResultCode !== undefined) {
         const whiteResult: RoundResult = {
           color: 'w',
-          opponentId: black === BYE_PLAYER_NUMBER ? undefined : black,
+          // eslint-disable-next-line unicorn/no-null
+          opponentId: black === BYE_PLAYER_NUMBER ? null : black,
           result: whiteResultCode,
           round: roundIndex + 1,
         };

@@ -22,10 +22,15 @@ interface Header {
 }
 
 interface NationalRating {
+  birthDate?: string;
+  classification?: string;
   federation: string;
+  name?: string;
   nationalId?: string;
+  origin?: string;
   pairingNumber: number;
   rating: number;
+  sex?: Sex;
 }
 
 interface Pairing {
@@ -69,7 +74,7 @@ interface Player {
 
 interface RoundResult {
   color: '-' | 'b' | 'w';
-  opponentId?: number;
+  opponentId: number | null;
   result: ResultCode;
   round: number;
 }
@@ -127,6 +132,7 @@ type ResultCode =
   | 'D'
   | 'F'
   | 'H'
+  | 'L'
   | 'U'
   | 'W'
   | 'Z';
