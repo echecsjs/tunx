@@ -14,8 +14,8 @@ npm install @echecs/tunx
 ## Quick Start
 
 ```typescript
-import { parse, stringify } from '@echecs/tunx';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { parse } from '@echecs/tunx';
+import { readFileSync } from 'node:fs';
 
 // Parse a TUNX file
 const buffer = new Uint8Array(readFileSync('tournament.TUNX'));
@@ -34,10 +34,6 @@ if (tournament) {
   console.log(player.title); // "GM"
   console.log(player.points); // 6.5
   console.log(player.rank); // 1
-
-  // Round-trip: write back byte-for-byte identical
-  const output = stringify(tournament);
-  writeFileSync('tournament-copy.TUNX', output);
 }
 ```
 
@@ -58,19 +54,6 @@ function parse(
 - Calls `options.onError` before returning `undefined`.
 - Calls `options.onWarning` for recoverable issues — parsing continues.
 - Never throws.
-
-### `stringify(tournament)`
-
-Re-encode a `Tournament` back to TUNX binary.
-
-```typescript
-function stringify(tournament: Tournament): Uint8Array;
-```
-
-- Requires `tournament._raw` (populated by `parse`) for byte-exact
-  reconstruction.
-- Throws `RangeError` if `_raw` is missing.
-- `stringify(parse(input))` produces output identical to `input`.
 
 ### `ParseOptions`
 
@@ -125,7 +108,6 @@ interface Tournament {
   tournamentType?: string;
 
   // TUNX-specific extensions
-  _raw: RawTournament;
   currentRound?: number;
   header?: Header;
   pairings?: Pairing[][];
@@ -158,8 +140,8 @@ interface Player {
 
 ```typescript
 interface RoundResult {
-  color: 'b' | 'w' | '-';
-  opponentId?: number;
+  color: '-' | 'b' | 'w';
+  opponentId: number | null;
   result: ResultCode;
   round: number;
 }
@@ -196,17 +178,23 @@ interface Header {
 
 ```typescript
 interface NationalRating {
+  birthDate?: string;
+  classification?: string;
   federation: string;
+  name?: string;
   nationalId?: string;
+  origin?: string;
   pairingNumber: number;
   rating: number;
+  sex?: Sex;
 }
 ```
 
 ### `RawTournament`
 
-Preserved binary chunks for byte-exact round-trip via `stringify()`. Not
-intended for direct use.
+Preserved binary chunks for byte-exact round-trip reconstruction. Internal type
+— not exported from the package entry point. Available on `Tournament._raw`
+after parsing.
 
 ```typescript
 interface RawTournament {
@@ -232,6 +220,7 @@ type ResultCode =
   | 'D'
   | 'F'
   | 'H'
+  | 'L'
   | 'U'
   | 'W'
   | 'Z';
@@ -247,6 +236,7 @@ type ResultCode =
 | `D`  | Draw by forfeit           |
 | `F`  | Full-point bye            |
 | `H`  | Half-point bye            |
+| `L`  | Loss by forfeit (special) |
 | `W`  | Win by forfeit (special)  |
 | `Z`  | Zero-point bye / unpaired |
 | `U`  | Unplayed                  |

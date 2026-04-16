@@ -239,7 +239,8 @@ The types are duplicated, not shared — each package defines its own.
 
 When modifying shared types (`Player`, `RoundResult`, `ResultCode`, or the
 common `Tournament` fields), keep both packages in sync. Changes to one must be
-reflected in the other so their `parse()` output remains structurally compatible.
+reflected in the other so their `parse()` output remains structurally
+compatible.
 
 ---
 
