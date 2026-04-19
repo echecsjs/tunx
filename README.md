@@ -1,8 +1,7 @@
 # @echecs/tunx
 
-Parse and stringify [Swiss-Manager](https://swiss-manager.at/) `.TUNX` binary
-tournament files. Zero dependencies, strict TypeScript, full round-trip
-fidelity. Output types align with
+Parse [Swiss-Manager](https://swiss-manager.at/) `.TUNX` binary tournament
+files. Zero dependencies, strict TypeScript. Output types align with
 [`@echecs/trf`](https://www.npmjs.com/package/@echecs/trf).
 
 ## Installation
@@ -187,24 +186,6 @@ interface NationalRating {
   pairingNumber: number;
   rating: number;
   sex?: Sex;
-}
-```
-
-### `RawTournament`
-
-Preserved binary chunks for byte-exact round-trip reconstruction. Internal type
-— not exported from the package entry point. Available on `Tournament._raw`
-after parsing.
-
-```typescript
-interface RawTournament {
-  configBytes: Uint8Array;
-  headerBytes: Uint8Array;
-  metadataStrings: string[];
-  pairingBytes: Uint8Array[];
-  pairingsSection: Uint8Array;
-  playerNumericBytes: Uint8Array[];
-  playerStrings: string[][];
 }
 ```
 
