@@ -13,8 +13,8 @@ TypeScript settings, formatting, naming, testing, ESLint rules).
 
 ## Project Overview
 
-Binary parser for SwissManager `.TUNX` files. Zero runtime
-dependencies. Named exports:
+Binary parser for SwissManager `.TUNX` files. Zero runtime dependencies. Named
+exports:
 
 - `parse(input, options?) → Tournament | undefined` — decodes a TUNX binary.
   Never throws; failures return `undefined` and call `options.onError`.
@@ -225,8 +225,8 @@ with compatible structure. The core shared shape:
   `'L'`, etc.
 
 TRF's `Tournament` is a superset (teams, scoring systems, acceleration, byes).
-TUNX's `Tournament` adds format-specific fields (`pairings`, `header`).
-The types are duplicated, not shared — each package defines its own.
+TUNX's `Tournament` adds format-specific fields (`pairings`, `header`). The
+types are duplicated, not shared — each package defines its own.
 
 When modifying shared types (`Player`, `RoundResult`, `ResultCode`, or the
 common `Tournament` fields), keep both packages in sync. Changes to one must be

@@ -1,10 +1,17 @@
 # Remove Dead Stringify Code Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use
+> superpowers:subagent-driven-development (recommended) or
+> superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Remove dead stringify/writer code left behind after v0.2.0 dropped `_raw`, and update docs to reflect reality.
+**Goal:** Remove dead stringify/writer code left behind after v0.2.0 dropped
+`_raw`, and update docs to reflect reality.
 
-**Architecture:** Pure deletion + doc updates. No behavioral changes to `parse()`. The `pairingBytes` array in `parse.ts` gets replaced with direct index math into `pairingData`. Six dead constant exports get removed from `constants.ts`.
+**Architecture:** Pure deletion + doc updates. No behavioral changes to
+`parse()`. The `pairingBytes` array in `parse.ts` gets replaced with direct
+index math into `pairingData`. Six dead constant exports get removed from
+`constants.ts`.
 
 **Tech Stack:** TypeScript, Vitest
 
@@ -13,6 +20,7 @@
 ### Task 1: Delete `src/stringify.ts` and `src/writer.ts`
 
 **Files:**
+
 - Delete: `src/stringify.ts`
 - Delete: `src/writer.ts`
 - Delete: `src/__tests__/writer.spec.ts`
@@ -25,13 +33,12 @@ rm src/stringify.ts src/writer.ts src/__tests__/writer.spec.ts
 
 - [ ] **Step 2: Run type check to confirm no imports break**
 
-Run: `pnpm run lint:types`
-Expected: PASS — nothing imports these files.
+Run: `pnpm run lint:types` Expected: PASS — nothing imports these files.
 
 - [ ] **Step 3: Run tests to confirm nothing breaks**
 
-Run: `pnpm run test`
-Expected: All tests pass. Writer tests are gone, parser tests unaffected.
+Run: `pnpm run test` Expected: All tests pass. Writer tests are gone, parser
+tests unaffected.
 
 - [ ] **Step 4: Commit**
 
@@ -45,6 +52,7 @@ git commit -m "refactor: delete dead stringify and writer modules"
 ### Task 2: Remove `RawTournament` from `src/types.ts`
 
 **Files:**
+
 - Modify: `src/types.ts:1-9` (delete interface)
 - Modify: `src/types.ts:152` (delete from export)
 
@@ -74,13 +82,12 @@ In the `export type { ... }` block, remove:
 
 - [ ] **Step 3: Run type check**
 
-Run: `pnpm run lint:types`
-Expected: PASS — nothing imports `RawTournament` (the only consumer was `stringify.ts`, deleted in Task 1).
+Run: `pnpm run lint:types` Expected: PASS — nothing imports `RawTournament` (the
+only consumer was `stringify.ts`, deleted in Task 1).
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm run test`
-Expected: All tests pass.
+Run: `pnpm run test` Expected: All tests pass.
 
 - [ ] **Step 5: Commit**
 
@@ -94,10 +101,12 @@ git commit -m "refactor: remove dead RawTournament type"
 ### Task 3: Remove dead code from `src/parse.ts`
 
 **Files:**
+
 - Modify: `src/parse.ts:26-27,30,32-34` (remove 6 constant imports)
 - Modify: `src/parse.ts:395-400` (remove `pairingBytes` array construction)
 - Modify: `src/parse.ts:430-436` (remove 6 `void` reads)
-- Modify: `src/parse.ts:492-494,502` (replace `pairingBytes` usage with direct math)
+- Modify: `src/parse.ts:492-494,502` (replace `pairingBytes` usage with direct
+  math)
 
 - [ ] **Step 1: Remove 6 dead constant imports**
 
@@ -117,12 +126,12 @@ In the import block from `'./constants.js'`, remove these 6 lines:
 Delete:
 
 ```typescript
-  const pairingBytes: Uint8Array[] = [];
+const pairingBytes: Uint8Array[] = [];
 
-  for (let index = 0; index < totalPairingRecords; index++) {
-    const offset = index * PAIRING_RECORD_SIZE;
-    pairingBytes.push(pairingData.slice(offset, offset + PAIRING_RECORD_SIZE));
-  }
+for (let index = 0; index < totalPairingRecords; index++) {
+  const offset = index * PAIRING_RECORD_SIZE;
+  pairingBytes.push(pairingData.slice(offset, offset + PAIRING_RECORD_SIZE));
+}
 ```
 
 - [ ] **Step 3: Remove 6 `void` reads (lines 430-436)**
@@ -130,18 +139,19 @@ Delete:
 Delete:
 
 ```typescript
-    // Read remaining numeric fields — kept in raw but not surfaced on Player
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_DELTA, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_PERIOD, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_CATEGORY_ID, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_REGISTRATION_ID, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_K_FACTOR, true);
+// Read remaining numeric fields — kept in raw but not surfaced on Player
+void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_DELTA, true);
+void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_PERIOD, true);
+void numericView.getUint16(PLAYER_NUMERIC_OFFSET_CATEGORY_ID, true);
+void numericView.getUint16(PLAYER_NUMERIC_OFFSET_REGISTRATION_ID, true);
+void numericView.getUint16(PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX, true);
+void numericView.getUint16(PLAYER_NUMERIC_OFFSET_K_FACTOR, true);
 ```
 
 - [ ] **Step 4: Refactor pairing loop to use direct index math**
 
-Replace the `endPairing` computation and inner loop that used `pairingBytes[pairingIndex]` with direct reads from `pairingData`:
+Replace the `endPairing` computation and inner loop that used
+`pairingBytes[pairingIndex]` with direct reads from `pairingData`:
 
 Old code (around lines 491-512):
 
@@ -203,13 +213,11 @@ New code:
 
 - [ ] **Step 5: Run type check**
 
-Run: `pnpm run lint:types`
-Expected: PASS.
+Run: `pnpm run lint:types` Expected: PASS.
 
 - [ ] **Step 6: Run tests**
 
-Run: `pnpm run test`
-Expected: All tests pass — behavior unchanged.
+Run: `pnpm run test` Expected: All tests pass — behavior unchanged.
 
 - [ ] **Step 7: Commit**
 
@@ -223,6 +231,7 @@ git commit -m "refactor: remove dead void reads and pairingBytes intermediate ar
 ### Task 4: Remove dead constant exports from `src/constants.ts`
 
 **Files:**
+
 - Modify: `src/constants.ts:80,83,89,95,98,101` (delete 6 constant declarations)
 - Modify: `src/constants.ts:206-207,210,212-214` (delete from export)
 
@@ -265,8 +274,7 @@ Remove from the `export { ... }` block:
 
 - [ ] **Step 3: Run lint and tests**
 
-Run: `pnpm run lint && pnpm run test`
-Expected: PASS.
+Run: `pnpm run lint && pnpm run test` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -280,17 +288,20 @@ git commit -m "refactor: remove unused player numeric offset constants"
 ### Task 5: Update `AGENTS.md`
 
 **Files:**
+
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Update project overview paragraph (line 3-4)**
 
 Old:
+
 ```
 Agent guidance for the `@echecs/tunx` package — SwissManager TUNX binary
 tournament file parser/serializer.
 ```
 
 New:
+
 ```
 Agent guidance for the `@echecs/tunx` package — SwissManager TUNX binary
 tournament file parser.
@@ -299,6 +310,7 @@ tournament file parser.
 - [ ] **Step 2: Remove stringify and create from named exports (lines 23-26)**
 
 Delete:
+
 ```markdown
 - `stringify(tournament) → Uint8Array` — re-encodes a parsed tournament.
   Requires `tournament._raw` and throws `RangeError` if it is absent.
@@ -309,12 +321,14 @@ Delete:
 - [ ] **Step 3: Replace round-trip fidelity statement (lines 38-39)**
 
 Old:
+
 ```
 Full round-trip fidelity is the primary design constraint — parsing a file and
 re-serializing it must produce byte-for-byte identical output to the original.
 ```
 
 New:
+
 ```
 The TUNX binary format is not fully understood — several header, config, and
 player numeric fields remain undocumented. The parser extracts all known fields
@@ -324,12 +338,14 @@ and silently skips unknown regions.
 - [ ] **Step 4: Remove round-trip note from header section (line 87-88)**
 
 Old:
+
 ```
 `93 FF 89 44` (LE: `0x4489FF93`). The header is preserved verbatim for
 round-trip fidelity.
 ```
 
 New:
+
 ```
 `93 FF 89 44` (LE: `0x4489FF93`).
 ```
@@ -337,6 +353,7 @@ New:
 - [ ] **Step 5: Remove round-trip note from config section (line 155)**
 
 Delete:
+
 ```
 The entire config section is stored raw for round-trip.
 ```
@@ -344,6 +361,7 @@ The entire config section is stored raw for round-trip.
 - [ ] **Step 6: Remove `_raw.pairingsSection` reference (lines 206-207)**
 
 Old:
+
 ```
 The entire pairings section (including marker and all trailing sub-sections such
 as `D3` and `E3`) is stored verbatim in `_raw.pairingsSection`.
@@ -354,11 +372,13 @@ New (just remove the paragraph, keep the surrounding content).
 - [ ] **Step 7: Remove `_raw` reference from common data model (line 237)**
 
 Old:
+
 ```
 TUNX's `Tournament` adds format-specific fields (`_raw`, `pairings`, `header`).
 ```
 
 New:
+
 ```
 TUNX's `Tournament` adds format-specific fields (`pairings`, `header`).
 ```
@@ -368,25 +388,32 @@ TUNX's `Tournament` adds format-specific fields (`pairings`, `header`).
 Remove or update these lines:
 
 Line 253 — Old:
+
 ```
 - `parse()` and `stringify()` are synchronous — do not introduce async.
 ```
+
 New:
+
 ```
 - `parse()` is synchronous — do not introduce async.
 ```
 
 Lines 254-255 — Old:
+
 ```
 - `src/index.ts` is a re-export barrel. Logic lives in `src/parse.ts` and
   `src/stringify.ts`.
 ```
+
 New:
+
 ```
 - `src/index.ts` is a re-export barrel. Logic lives in `src/parse.ts`.
 ```
 
 Lines 261-266 — Delete entirely:
+
 ```
 - `src/writer.ts` — `BinaryWriter` class: chunk-accumulating writer with
   `writeU8()`, `writeU16LE()`, `writeU32LE()`, `writeString()` (UTF-16LE), and
@@ -399,6 +426,7 @@ Lines 261-266 — Delete entirely:
 - [ ] **Step 9: Remove stringify error handling note (line 280)**
 
 Delete:
+
 ```
 - `stringify()` throws `RangeError` if `tournament._raw` is absent.
 ```
@@ -415,6 +443,7 @@ git commit -m "docs: update AGENTS.md — remove stringify/round-trip references
 ### Task 6: Update `README.md` and `package.json`
 
 **Files:**
+
 - Modify: `README.md:1-6` (update intro)
 - Modify: `README.md:193-209` (delete `RawTournament` section)
 - Modify: `package.json:6` (update description)
@@ -423,6 +452,7 @@ git commit -m "docs: update AGENTS.md — remove stringify/round-trip references
 - [ ] **Step 1: Update README intro (lines 1-6)**
 
 Old:
+
 ```markdown
 # @echecs/tunx
 
@@ -433,6 +463,7 @@ fidelity. Output types align with
 ```
 
 New:
+
 ```markdown
 # @echecs/tunx
 
@@ -444,6 +475,7 @@ files. Zero dependencies, strict TypeScript. Output types align with
 - [ ] **Step 2: Delete RawTournament section (lines 193-209)**
 
 Delete the entire block:
+
 ```markdown
 ### `RawTournament`
 
@@ -451,27 +483,22 @@ Preserved binary chunks for byte-exact round-trip reconstruction. Internal type
 — not exported from the package entry point. Available on `Tournament._raw`
 after parsing.
 
-\`\`\`typescript
-interface RawTournament {
-  configBytes: Uint8Array;
-  headerBytes: Uint8Array;
-  metadataStrings: string[];
-  pairingBytes: Uint8Array[];
-  pairingsSection: Uint8Array;
-  playerNumericBytes: Uint8Array[];
-  playerStrings: string[][];
-}
-\`\`\`
+\`\`\`typescript interface RawTournament { configBytes: Uint8Array; headerBytes:
+Uint8Array; metadataStrings: string[]; pairingBytes: Uint8Array[];
+pairingsSection: Uint8Array; playerNumericBytes: Uint8Array[]; playerStrings:
+string[][]; } \`\`\`
 ```
 
 - [ ] **Step 3: Update package.json description (line 6)**
 
 Old:
+
 ```json
 "description": "Parse and stringify SwissManager TUNX binary tournament files. Zero dependencies, strict TypeScript, full round-trip fidelity.",
 ```
 
 New:
+
 ```json
 "description": "Parse SwissManager TUNX binary tournament files. Zero dependencies, strict TypeScript.",
 ```
@@ -479,14 +506,14 @@ New:
 - [ ] **Step 4: Remove "serializer" keyword from package.json (line 47)**
 
 Delete the line:
+
 ```json
     "serializer",
 ```
 
 - [ ] **Step 5: Run full check**
 
-Run: `pnpm run lint && pnpm run test && pnpm run build`
-Expected: All pass.
+Run: `pnpm run lint && pnpm run test && pnpm run build` Expected: All pass.
 
 - [ ] **Step 6: Commit**
 
