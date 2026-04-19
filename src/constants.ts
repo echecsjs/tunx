@@ -76,29 +76,11 @@ const PLAYER_NUMERIC_BLOCK_SIZE = 110;
 /** Byte offset inside the numeric block for the FIDE rating (U16LE). */
 const PLAYER_NUMERIC_OFFSET_FIDE_RATING = 0x08;
 
-/** Byte offset inside the numeric block for the alphabetical sort index (U16LE). */
-const PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX = 0x38;
-
-/** Byte offset inside the numeric block for the category ID (U16LE). */
-const PLAYER_NUMERIC_OFFSET_CATEGORY_ID = 0x12;
-
 /** Byte offset inside the numeric block for the FIDE ID (U32LE). */
 const PLAYER_NUMERIC_OFFSET_FIDE_ID = 0x18;
 
-/** Byte offset inside the numeric block for the FIDE K-factor (U16LE). */
-const PLAYER_NUMERIC_OFFSET_K_FACTOR = 0x3a;
-
 /** Byte offset inside the numeric block for the national rating (U16LE). */
 const PLAYER_NUMERIC_OFFSET_NATIONAL_RATING = 0x0a;
-
-/** Byte offset inside the numeric block for the rating delta (U16LE). */
-const PLAYER_NUMERIC_OFFSET_RATING_DELTA = 0x0e;
-
-/** Byte offset inside the numeric block for the rating period (U16LE). */
-const PLAYER_NUMERIC_OFFSET_RATING_PERIOD = 0x10;
-
-/** Byte offset inside the numeric block for the registration ID (U16LE). */
-const PLAYER_NUMERIC_OFFSET_REGISTRATION_ID = 0x16;
 
 /** Byte offset inside the numeric block for the sex flag (U8: 0=male, 1=female). */
 const PLAYER_NUMERIC_OFFSET_SEX = 0x06;
@@ -203,15 +185,9 @@ export {
   PAIRINGS_MARKER,
   PLAYER_MARKER,
   PLAYER_NUMERIC_BLOCK_SIZE,
-  PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX,
-  PLAYER_NUMERIC_OFFSET_CATEGORY_ID,
   PLAYER_NUMERIC_OFFSET_FIDE_ID,
   PLAYER_NUMERIC_OFFSET_FIDE_RATING,
-  PLAYER_NUMERIC_OFFSET_K_FACTOR,
   PLAYER_NUMERIC_OFFSET_NATIONAL_RATING,
-  PLAYER_NUMERIC_OFFSET_RATING_DELTA,
-  PLAYER_NUMERIC_OFFSET_RATING_PERIOD,
-  PLAYER_NUMERIC_OFFSET_REGISTRATION_ID,
   PLAYER_NUMERIC_OFFSET_SEX,
   PLAYER_STRING_COUNT,
   PLAYER_STRINGS,
