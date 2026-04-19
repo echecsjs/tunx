@@ -1,13 +1,3 @@
-interface RawTournament {
-  configBytes: Uint8Array;
-  headerBytes: Uint8Array;
-  metadataStrings: string[];
-  pairingBytes: Uint8Array[];
-  pairingsSection: Uint8Array;
-  playerNumericBytes: Uint8Array[];
-  playerStrings: string[][];
-}
-
 interface Header {
   /** High-entropy bytes 0x34–0x67, likely tied to SW license/installation. */
   installSignature: Uint8Array;
@@ -149,7 +139,6 @@ export type {
   ParseOptions,
   ParseWarning,
   Player,
-  RawTournament,
   ResultCode,
   RoundResult,
   Sex,

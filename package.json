@@ -3,7 +3,7 @@
   "bugs": {
     "url": "https://github.com/echecsjs/tunx/issues"
   },
-  "description": "Parse and stringify SwissManager TUNX binary tournament files. Zero dependencies, strict TypeScript, full round-trip fidelity.",
+  "description": "Parse SwissManager TUNX binary tournament files. Zero dependencies, strict TypeScript.",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.5.0",
@@ -44,7 +44,6 @@
     "chess",
     "no-dependencies",
     "parser",
-    "serializer",
     "swiss-manager",
     "tournament",
     "tunx",

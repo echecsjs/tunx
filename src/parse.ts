@@ -23,15 +23,9 @@ import {
   PAIRING_RECORD_SIZE,
   PLAYER_MARKER,
   PLAYER_NUMERIC_BLOCK_SIZE,
-  PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX,
-  PLAYER_NUMERIC_OFFSET_CATEGORY_ID,
   PLAYER_NUMERIC_OFFSET_FIDE_ID,
   PLAYER_NUMERIC_OFFSET_FIDE_RATING,
-  PLAYER_NUMERIC_OFFSET_K_FACTOR,
   PLAYER_NUMERIC_OFFSET_NATIONAL_RATING,
-  PLAYER_NUMERIC_OFFSET_RATING_DELTA,
-  PLAYER_NUMERIC_OFFSET_RATING_PERIOD,
-  PLAYER_NUMERIC_OFFSET_REGISTRATION_ID,
   PLAYER_NUMERIC_OFFSET_SEX,
   PLAYER_STRINGS,
   PLAYER_STRING_COUNT,
@@ -392,13 +386,6 @@ export default function parse(
   const totalPairingRecords = Math.floor(
     pairingData.length / PAIRING_RECORD_SIZE,
   );
-  const pairingBytes: Uint8Array[] = [];
-
-  for (let index = 0; index < totalPairingRecords; index++) {
-    const offset = index * PAIRING_RECORD_SIZE;
-    pairingBytes.push(pairingData.slice(offset, offset + PAIRING_RECORD_SIZE));
-  }
-
   // ── 8. Build structured data ─────────────────────────────────────────────
 
   // Players
@@ -426,14 +413,6 @@ export default function parse(
       PLAYER_NUMERIC_OFFSET_NATIONAL_RATING,
       true,
     );
-
-    // Read remaining numeric fields — kept in raw but not surfaced on Player
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_DELTA, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_RATING_PERIOD, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_CATEGORY_ID, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_REGISTRATION_ID, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_ALPHABETICAL_INDEX, true);
-    void numericView.getUint16(PLAYER_NUMERIC_OFFSET_K_FACTOR, true);
 
     const fideId = numericView.getUint32(PLAYER_NUMERIC_OFFSET_FIDE_ID, true);
 
@@ -491,7 +470,7 @@ export default function parse(
     const startPairing = roundIndex * pairingsPerRound;
     const endPairing = Math.min(
       startPairing + pairingsPerRound,
-      pairingBytes.length,
+      totalPairingRecords,
     );
 
     for (
@@ -499,16 +478,16 @@ export default function parse(
       pairingIndex < endPairing;
       pairingIndex++
     ) {
-      const record = pairingBytes[pairingIndex];
+      const offset = pairingIndex * PAIRING_RECORD_SIZE;
 
-      if (record === undefined) {
+      if (offset + PAIRING_RECORD_SIZE > pairingData.length) {
         break;
       }
 
       const pairingView = new DataView(
-        record.buffer,
-        record.byteOffset,
-        record.byteLength,
+        pairingData.buffer,
+        pairingData.byteOffset + offset,
+        PAIRING_RECORD_SIZE,
       );
       const white = pairingView.getUint16(0, true);
       const black = pairingView.getUint16(2, true);

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Agent guidance for the `@echecs/tunx` package — SwissManager TUNX binary
-tournament file parser/serializer.
+tournament file parser.
 
 See the root `AGENTS.md` for workspace-wide conventions (package manager,
 TypeScript settings, formatting, naming, testing, ESLint rules).
@@ -13,17 +13,13 @@ TypeScript settings, formatting, naming, testing, ESLint rules).
 
 ## Project Overview
 
-Binary parser and serializer for SwissManager `.TUNX` files. Zero runtime
-dependencies. Named exports:
+Binary parser for SwissManager `.TUNX` files. Zero runtime dependencies. Named
+exports:
 
 - `parse(input, options?) → Tournament | undefined` — decodes a TUNX binary.
   Never throws; failures return `undefined` and call `options.onError`.
   Recoverable issues (e.g. missing players, empty strings) call
   `options.onWarning`.
-- `stringify(tournament) → Uint8Array` — re-encodes a parsed tournament.
-  Requires `tournament._raw` and throws `RangeError` if it is absent.
-- `create(template, input) → Tournament` — constructs a new `Tournament` from a
-  template TUNX file and a plain-object description.
 
 Output types align with the `@echecs/trf` model:
 
@@ -35,8 +31,9 @@ Output types align with the `@echecs/trf` model:
 - Results use `ResultCode` (`'1'`, `'0'`, `'='`, `'+'`, `'-'`, etc.) matching
   TRF conventions.
 
-Full round-trip fidelity is the primary design constraint — parsing a file and
-re-serializing it must produce byte-for-byte identical output to the original.
+The TUNX binary format is not fully understood — several header, config, and
+player numeric fields remain undocumented. The parser extracts all known fields
+and silently skips unknown regions.
 
 ---
 
@@ -84,8 +81,7 @@ pairing software. All integers are little-endian.
 ### Header (bytes 0x00–0x6B, 108 bytes)
 
 Fixed-size block at the start of every file. Starts with the 4-byte magic
-`93 FF 89 44` (LE: `0x4489FF93`). The header is preserved verbatim for
-round-trip fidelity.
+`93 FF 89 44` (LE: `0x4489FF93`).
 
 | Offset | Size | Field         | Type  | Notes                                    |
 | ------ | ---- | ------------- | ----- | ---------------------------------------- |
@@ -152,8 +148,6 @@ U16LE value is meaningful (the low byte is always 0x00). Known codes:
 | 0x55 | Buchholz Cut 1     |
 | 0x58 | Average rating     |
 
-The entire config section is stored raw for round-trip.
-
 ### Player section (marker `A5 FF 89 44`)
 
 Immediately follows the config section. Each player record contains:
@@ -203,9 +197,6 @@ Result codes: `0` = unpaired, `1` = white wins, `2` = draw, `3` = black wins,
 Bye player number is `0xFFFE`. Records are ordered by round then board. Pairings
 per round = `ceil(playerCount / 2)`.
 
-The entire pairings section (including marker and all trailing sub-sections such
-as `D3` and `E3`) is stored verbatim in `_raw.pairingsSection`.
-
 ### D3 section (marker `D3 FF 89 44`)
 
 Section offset table containing 4 × U32LE absolute file offsets pointing to the
@@ -234,8 +225,8 @@ with compatible structure. The core shared shape:
   `'L'`, etc.
 
 TRF's `Tournament` is a superset (teams, scoring systems, acceleration, byes).
-TUNX's `Tournament` adds format-specific fields (`_raw`, `pairings`, `header`).
-The types are duplicated, not shared — each package defines its own.
+TUNX's `Tournament` adds format-specific fields (`pairings`, `header`). The
+types are duplicated, not shared — each package defines its own.
 
 When modifying shared types (`Player`, `RoundResult`, `ResultCode`, or the
 common `Tournament` fields), keep both packages in sync. Changes to one must be
@@ -250,20 +241,13 @@ compatible.
 - No runtime dependencies — keep it that way.
 - Types align with the `@echecs/trf` model — `Tournament`, `Player`,
   `RoundResult`, and `ResultCode` follow TRF conventions.
-- `parse()` and `stringify()` are synchronous — do not introduce async.
-- `src/index.ts` is a re-export barrel. Logic lives in `src/parse.ts` and
-  `src/stringify.ts`.
+- `parse()` is synchronous — do not introduce async.
+- `src/index.ts` is a re-export barrel. Logic lives in `src/parse.ts`.
 - `src/constants.ts` contains all binary layout constants.
 - `src/types.ts` contains all exported types.
 - `src/reader.ts` — `BinaryReader` class: cursor-based reader over a
   `Uint8Array` with `readU8()`, `readU16LE()`, `readU32LE()`, `readString()`
   (UTF-16LE), and `readBytes()`.
-- `src/writer.ts` — `BinaryWriter` class: chunk-accumulating writer with
-  `writeU8()`, `writeU16LE()`, `writeU32LE()`, `writeString()` (UTF-16LE), and
-  `writeBytes()`. Call `toUint8Array()` to flush all chunks.
-- `Tournament._raw` preserves the original byte sequences needed for round-trip
-  reconstruction: `headerBytes`, `metadataStrings`, `configBytes`,
-  `playerStrings`, `playerNumericBytes`, `pairingsSection`.
 - Section markers are located using a linear byte-scan (`findMarker`) rather
   than fixed offsets; the metadata and config sections have variable length.
 - All interface fields sorted alphabetically (`sort-keys` is an ESLint error).
@@ -277,7 +261,6 @@ compatible.
   section markers) and calls `options.onError`.
 - `parse()` calls `options.onWarning` for recoverable issues (player count
   mismatch, unexpected end of data, zero round count).
-- `stringify()` throws `RangeError` if `tournament._raw` is absent.
 - Never use `null`; prefer `undefined` for absent optional values.
 
 ---
