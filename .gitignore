@@ -6,3 +6,7 @@
 
 # Tests
 coverage/
+
+# Agent artifacts
+.superpowers/
+docs/superpowers/
