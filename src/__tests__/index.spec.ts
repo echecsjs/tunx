@@ -43,19 +43,19 @@ describe('parse()', () => {
     });
 
     it('has the correct tournament name', () => {
-      expect(tournament?.name).toBe('Circuito Sesc de Xadrez - 2026');
+      expect(tournament?.metadata?.name).toBe('Circuito Sesc de Xadrez - 2026');
     });
 
     it('has the correct city', () => {
-      expect(tournament?.city).toBe('Curitiba-PR');
+      expect(tournament?.metadata?.city).toBe('Curitiba-PR');
     });
 
     it('has the correct federation', () => {
-      expect(tournament?.federation).toBe('BRA');
+      expect(tournament?.metadata?.federation).toBe('BRA');
     });
 
     it('has the correct time control', () => {
-      expect(tournament?.timeControl).toBe("7'+5'' ou 12' KO");
+      expect(tournament?.metadata?.timeControl).toBe("7'+5'' ou 12' KO");
     });
 
     it('has 29 players', () => {
@@ -63,7 +63,7 @@ describe('parse()', () => {
     });
 
     it('has 7 rounds', () => {
-      expect(tournament?.rounds).toBe(7);
+      expect(tournament?.totalRounds).toBe(7);
     });
 
     describe('player 1 (Aloisio)', () => {
@@ -110,24 +110,16 @@ describe('parse()', () => {
       });
     });
 
-    it('has currentRound 7', () => {
-      expect(tournament?.currentRound).toBe(7);
-    });
-
     it('has startDate 2026-03-28', () => {
-      expect(tournament?.startDate).toBe('2026-03-28');
+      expect(tournament?.metadata?.startDate).toBe('2026-03-28');
     });
 
     it('has endDate 2026-03-28', () => {
-      expect(tournament?.endDate).toBe('2026-03-28');
+      expect(tournament?.metadata?.endDate).toBe('2026-03-28');
     });
 
     it('has round 1 date of 2026-03-28', () => {
-      expect(tournament?.roundDates?.[0]).toBe('2026-03-28');
-    });
-
-    it('has no round time set', () => {
-      expect(tournament?.roundTimes?.[0]).toBeUndefined();
+      expect(tournament?.metadata?.roundDates?.[0]).toBe('2026-03-28');
     });
 
     it('has 5 tiebreaks', () => {
@@ -141,36 +133,20 @@ describe('parse()', () => {
       ]);
     });
 
-    describe('header', () => {
-      it('has the correct tournament ID', () => {
-        expect(tournament?.header?.tournamentId).toBe(1_378_181);
-      });
+    it('has completedRounds', () => {
+      expect(tournament?.completedRounds).toBeDefined();
+      expect(tournament?.completedRounds.length).toBeGreaterThan(0);
+    });
 
-      it('has a savedAt date of 2024-10-23', () => {
-        const d = tournament?.header?.savedAt;
-        expect(d).toBeInstanceOf(Date);
-        expect(d?.getUTCFullYear()).toBe(2024);
-        expect(d?.getUTCMonth()).toBe(9); // 0-indexed
-        expect(d?.getUTCDate()).toBe(23);
-      });
+    it('has games in completed rounds', () => {
+      const round1 = tournament?.completedRounds[0];
+      expect(round1?.games.length).toBeGreaterThan(0);
+    });
 
-      it('has an installedAt date of 2011-01-15', () => {
-        const d = tournament?.header?.installedAt;
-        expect(d).toBeInstanceOf(Date);
-        expect(d?.getUTCFullYear()).toBe(2011);
-        expect(d?.getUTCMonth()).toBe(0);
-        expect(d?.getUTCDate()).toBe(15);
-      });
-
-      it('has a 20-byte licenseHash', () => {
-        expect(tournament?.header?.licenseHash).toBeInstanceOf(Uint8Array);
-        expect(tournament?.header?.licenseHash).toHaveLength(20);
-      });
-
-      it('has a 52-byte installSignature', () => {
-        expect(tournament?.header?.installSignature).toBeInstanceOf(Uint8Array);
-        expect(tournament?.header?.installSignature).toHaveLength(52);
-      });
+    it('has player IDs as strings', () => {
+      const player = tournament?.players[0];
+      expect(player?.id).toBe('1');
+      expect(player?.startingRank).toBe(1);
     });
   });
 
@@ -183,7 +159,7 @@ describe('parse()', () => {
     });
 
     it('has a name containing "Elllobregat"', () => {
-      expect(tournament?.name).toContain('Elllobregat');
+      expect(tournament?.metadata?.name).toContain('Elllobregat');
     });
 
     it('has 210 players', () => {
@@ -191,7 +167,7 @@ describe('parse()', () => {
     });
 
     it('has 9 rounds', () => {
-      expect(tournament?.rounds).toBe(9);
+      expect(tournament?.totalRounds).toBe(9);
     });
 
     describe('player 1 (Fedoseev)', () => {
@@ -244,54 +220,20 @@ describe('parse()', () => {
       expect(tournament?.tiebreaks).toContain('progressive');
     });
 
-    it('has currentRound 9', () => {
-      expect(tournament?.currentRound).toBe(9);
-    });
-
     it('has startDate 2023-11-30', () => {
-      expect(tournament?.startDate).toBe('2023-11-30');
+      expect(tournament?.metadata?.startDate).toBe('2023-11-30');
     });
 
     it('has endDate 2023-12-08', () => {
-      expect(tournament?.endDate).toBe('2023-12-08');
+      expect(tournament?.metadata?.endDate).toBe('2023-12-08');
     });
 
     it('has round 1 date of 2023-11-30', () => {
-      expect(tournament?.roundDates?.[0]).toBe('2023-11-30');
+      expect(tournament?.metadata?.roundDates?.[0]).toBe('2023-11-30');
     });
 
     it('has round 9 date of 2023-12-08', () => {
-      expect(tournament?.roundDates?.[8]).toBe('2023-12-08');
-    });
-
-    it('has round 1 time of 16:00', () => {
-      expect(tournament?.roundTimes?.[0]).toBe('16:00');
-    });
-
-    it('has round 9 time of 10:00', () => {
-      expect(tournament?.roundTimes?.[8]).toBe('10:00');
-    });
-
-    describe('header', () => {
-      it('has the correct tournament ID', () => {
-        expect(tournament?.header?.tournamentId).toBe(753_347);
-      });
-
-      it('has a savedAt date of 2025-03-19', () => {
-        const d = tournament?.header?.savedAt;
-        expect(d).toBeInstanceOf(Date);
-        expect(d?.getUTCFullYear()).toBe(2025);
-        expect(d?.getUTCMonth()).toBe(2);
-        expect(d?.getUTCDate()).toBe(19);
-      });
-
-      it('has an installedAt date of 2007-09-30', () => {
-        const d = tournament?.header?.installedAt;
-        expect(d).toBeInstanceOf(Date);
-        expect(d?.getUTCFullYear()).toBe(2007);
-        expect(d?.getUTCMonth()).toBe(8);
-        expect(d?.getUTCDate()).toBe(30);
-      });
+      expect(tournament?.metadata?.roundDates?.[8]).toBe('2023-12-08');
     });
   });
 
@@ -303,46 +245,41 @@ describe('parse()', () => {
       expect(tournament).toBeDefined();
     });
 
-    it('has currentRound 5', () => {
-      expect(tournament?.currentRound).toBe(5);
-    });
-
-    it('has unpaired results in round 6', () => {
-      const round6Pairings = tournament?.pairings?.[5];
-      expect(round6Pairings).toBeDefined();
-      const unpaired = round6Pairings?.filter((p) => p.result === 'Z');
-      expect(unpaired?.length).toBeGreaterThan(0);
+    it('has completedRounds with fewer rounds than totalRounds', () => {
+      expect(tournament?.completedRounds.length).toBeLessThan(
+        tournament?.totalRounds ?? Number.POSITIVE_INFINITY,
+      );
     });
   });
 
   describe('tournamentType detection', () => {
     it('detects swiss for sample.TUNX', () => {
       const tournament = parse(fixture('sample.TUNX'));
-      expect(tournament?.tournamentType).toBe('swiss');
+      expect(tournament?.metadata?.tournamentType).toBe('swiss');
     });
 
     it('detects swiss for 2023_elllobregat_a_753347.TUNX', () => {
       const tournament = parse(fixture('2023_elllobregat_a_753347.TUNX'));
-      expect(tournament?.tournamentType).toBe('swiss');
+      expect(tournament?.metadata?.tournamentType).toBe('swiss');
     });
 
     it('detects round-robin for albanian_roundrobin_1381000.TUNX', () => {
       const tournament = parse(fixture('re/albanian_roundrobin_1381000.TUNX'));
-      expect(tournament?.tournamentType).toBe('round-robin');
+      expect(tournament?.metadata?.tournamentType).toBe('round-robin');
     });
 
     it('detects round-robin for austria_roundrobin_blitz_1384827.TUNX', () => {
       const tournament = parse(
         fixture('re/austria_roundrobin_blitz_1384827.TUNX'),
       );
-      expect(tournament?.tournamentType).toBe('round-robin');
+      expect(tournament?.metadata?.tournamentType).toBe('round-robin');
     });
 
     it('detects round-robin for austria_roundrobin_vereinsmeisterschaft_1288524.TUNX', () => {
       const tournament = parse(
         fixture('re/austria_roundrobin_vereinsmeisterschaft_1288524.TUNX'),
       );
-      expect(tournament?.tournamentType).toBe('round-robin');
+      expect(tournament?.metadata?.tournamentType).toBe('round-robin');
     });
   });
 });

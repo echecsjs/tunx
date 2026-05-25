@@ -1,16 +1,11 @@
 export { default as parse } from './parse.js';
+
+export type { ParseError, ParseOptions, ParseWarning } from './types.js';
 export type {
-  Header,
+  CompletedRound,
+  Game,
   NationalRating,
-  Pairing,
-  ParseError,
-  ParseOptions,
-  ParseWarning,
   Player,
-  ResultCode,
-  RoundResult,
-  Sex,
-  Tiebreak,
-  Title,
-  Tournament,
-} from './types.js';
+  TournamentData,
+  TournamentMetadata,
+} from '@echecs/tournament';

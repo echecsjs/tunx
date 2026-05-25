@@ -9,14 +9,7 @@ import {
   CONFIG_OFFSET_TIEBREAK_COUNT,
   CONFIG_OFFSET_TOTAL_ROUNDS,
   CONFIG_OFFSET_TOURNAMENT_TYPE,
-  HEADER_INSTALLED_AT_OFFSET,
-  HEADER_INSTALL_SIGNATURE_OFFSET,
-  HEADER_INSTALL_SIGNATURE_SIZE,
-  HEADER_LICENSE_HASH_OFFSET,
-  HEADER_LICENSE_HASH_SIZE,
-  HEADER_SAVED_AT_OFFSET,
   HEADER_SIZE,
-  HEADER_TOURNAMENT_ID_OFFSET,
   MAGIC,
   METADATA,
   METADATA_OFFSET,
@@ -37,17 +30,25 @@ import {
 import BinaryReader from './reader.js';
 
 import type {
-  Header,
   NationalRating,
   Pairing,
   ParseOptions,
-  Player,
+  RawPlayer,
   ResultCode,
   RoundResult,
   Tiebreak,
   Title,
-  Tournament,
 } from './types.js';
+import type {
+  Bye,
+  CompletedRound,
+  Game,
+  Player,
+  TournamentData,
+  TournamentMetadata,
+  NationalRating as TournamentNationalRating,
+} from '@echecs/tournament';
+
 
 /** Search for a 4-byte little-endian marker in the buffer. */
 function findMarker(buffer: Uint8Array, marker: number): number {
@@ -154,19 +155,6 @@ function toTitle(value: string): Title | undefined {
   return valid.includes(value as Title) ? (value as Title) : undefined;
 }
 
-/** Convert a YYYYMMDD integer to a UTC Date, or `undefined` if zero. */
-function parseDate(yyyymmdd: number): Date | undefined {
-  if (yyyymmdd === 0) {
-    return undefined;
-  }
-
-  const year = Math.floor(yyyymmdd / 10_000);
-  const month = Math.floor((yyyymmdd % 10_000) / 100);
-  const day = yyyymmdd % 100;
-
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
 /** Format a YYYYMMDD integer as an ISO date string (YYYY-MM-DD). */
 function formatDate(yyyymmdd: number): string | undefined {
   if (yyyymmdd === 0) {
@@ -180,17 +168,79 @@ function formatDate(yyyymmdd: number): string | undefined {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+/** Map a tunx ResultCode to a Bye kind. */
+function byeKind(
+  result: ResultCode,
+): 'full' | 'half' | 'pairing' | 'zero' | undefined {
+  switch (result) {
+    case 'F':
+    case '+': {
+      return 'full';
+    }
+    case 'H':
+    case 'D':
+    case '=': {
+      return 'half';
+    }
+    case 'U':
+    case 'Z':
+    case '-': {
+      return 'zero';
+    }
+    default: {
+      return undefined;
+    }
+  }
+}
+
+/** Convert a tunx pairing result to a Game. */
+function toGame(
+  whiteId: string,
+  blackId: string,
+  result: ResultCode,
+): Game | undefined {
+  switch (result) {
+    case '1': {
+      return { black: blackId, result: 'white', white: whiteId };
+    }
+    case '0': {
+      return { black: blackId, result: 'black', white: whiteId };
+    }
+    case '=': {
+      return { black: blackId, result: 'draw', white: whiteId };
+    }
+    case '+': {
+      return { black: blackId, forfeit: 'black', result: 'white', white: whiteId };
+    }
+    case '-': {
+      return { black: blackId, forfeit: 'white', result: 'black', white: whiteId };
+    }
+    case 'W': {
+      return { black: blackId, rated: false, result: 'white', white: whiteId };
+    }
+    case 'L': {
+      return { black: blackId, rated: false, result: 'black', white: whiteId };
+    }
+    case 'D': {
+      return { black: blackId, rated: false, result: 'draw', white: whiteId };
+    }
+    default: {
+      return undefined;
+    }
+  }
+}
+
 /**
  * Parse a TUNX binary tournament file.
  *
  * @param input - Raw bytes of the `.TUNX` file.
  * @param options - Optional error/warning callbacks.
- * @returns Parsed `Tournament`, or `undefined` if the file is invalid.
+ * @returns Parsed `TournamentData`, or `undefined` if the file is invalid.
  */
 export default function parse(
   input: Uint8Array,
   options?: ParseOptions,
-): Tournament | undefined {
+): TournamentData | undefined {
   const onError = options?.onError;
   const onWarning = options?.onWarning;
 
@@ -210,32 +260,6 @@ export default function parse(
     });
     return undefined;
   }
-
-  // ── 2. Read header bytes ─────────────────────────────────────────────────
-  const headerBytes = input.slice(0, HEADER_SIZE);
-
-  // ── 2b. Decode header fields ─────────────────────────────────────────────
-  const licenseHash = headerBytes.slice(
-    HEADER_LICENSE_HASH_OFFSET,
-    HEADER_LICENSE_HASH_OFFSET + HEADER_LICENSE_HASH_SIZE,
-  );
-  const savedAt = parseDate(view.getUint32(HEADER_SAVED_AT_OFFSET, true));
-  const tournamentId = view.getUint32(HEADER_TOURNAMENT_ID_OFFSET, true);
-  const installedAt = parseDate(
-    view.getUint32(HEADER_INSTALLED_AT_OFFSET, true),
-  );
-  const installSignature = headerBytes.slice(
-    HEADER_INSTALL_SIGNATURE_OFFSET,
-    HEADER_INSTALL_SIGNATURE_OFFSET + HEADER_INSTALL_SIGNATURE_SIZE,
-  );
-
-  const header: Header = {
-    installSignature,
-    installedAt,
-    licenseHash,
-    savedAt,
-    tournamentId,
-  };
 
   // ── 3. Locate section markers ────────────────────────────────────────────
   const configMarkerOffset = findMarker(input, CONFIG_MARKER);
@@ -397,7 +421,7 @@ export default function parse(
   // ── 8. Build structured data ─────────────────────────────────────────────
 
   // Players
-  const players: Player[] = [];
+  const players: RawPlayer[] = [];
 
   for (const [index, strings] of playerStrings.entries()) {
     const numericBlock = playerNumericBytes[index];
@@ -444,7 +468,7 @@ export default function parse(
           ]
         : undefined;
 
-    const player: Player = {
+    const player: RawPlayer = {
       federation: nonEmpty(federation),
       fideId: fideId > 0 ? String(fideId) : undefined,
       name,
@@ -637,11 +661,11 @@ export default function parse(
     let a3Pos = a3Offset;
     for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
       // Read string: U16LE char count + chars
-      if (a3Pos + 2 > configBytes.byteLength) break;
+      if (a3Pos + 2 > configBytes.byteLength) { break; }
       const charCount = configDataView.getUint16(a3Pos, true);
       a3Pos += 2;
       const byteCount = charCount * 2;
-      if (a3Pos + byteCount > configBytes.byteLength) break;
+      if (a3Pos + byteCount > configBytes.byteLength) { break; }
 
       if (charCount > 0) {
         const decoder = new TextDecoder('utf-16le');
@@ -690,9 +714,7 @@ export default function parse(
   const getMetadata = (index: number): string => metadataStrings[index] ?? '';
 
   const name = getMetadata(METADATA.NAME);
-  const subtitleShort = nonEmpty(getMetadata(METADATA.SUBTITLE_SHORT));
   const city = nonEmpty(getMetadata(METADATA.CITY));
-  const venue = nonEmpty(getMetadata(METADATA.VENUE));
   const federation = nonEmpty(getMetadata(METADATA.FEDERATION));
   const timeControl = nonEmpty(getMetadata(METADATA.TIME_CONTROL));
 
@@ -701,26 +723,78 @@ export default function parse(
   const deputyArbiters: string[] | undefined =
     deputyArbiterRaw === undefined ? undefined : [deputyArbiterRaw];
 
+  // ── Convert to TournamentData ─────────────────────────────────────────────
+
+  const completedRounds: CompletedRound[] = [];
+  for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
+    const roundPairingsRaw = allPairings[roundIndex];
+    if (roundPairingsRaw === undefined) { continue; }
+
+    const games: Game[] = [];
+    const byes: Bye[] = [];
+
+    for (const pairing of roundPairingsRaw) {
+      if (pairing.result === undefined || pairing.result === 'Z') { continue; }
+      const whiteId = String(pairing.white);
+      if (pairing.black === 0) {
+        const kind = byeKind(pairing.result);
+        if (kind !== undefined) { byes.push({ kind, player: whiteId }); }
+        continue;
+      }
+      const blackId = String(pairing.black);
+      const game = toGame(whiteId, blackId, pairing.result);
+      if (game !== undefined) { games.push(game); }
+    }
+
+    if (roundIndex < (currentRound ?? totalRounds)) {
+      completedRounds.push({ byes, games });
+    }
+  }
+
+  const tournamentPlayers: Player[] = players.map((p) => {
+    const nrs: TournamentNationalRating[] | undefined =
+      p.nationalRatings === undefined
+        ? undefined
+        : p.nationalRatings.map((nr) => ({
+            ...(nr.classification !== undefined && { classification: nr.classification }),
+            federation: nr.federation,
+            ...(nr.nationalId !== undefined && { nationalId: nr.nationalId }),
+            rating: nr.rating,
+          }));
+    return {
+      ...(p.birthDate !== undefined && { birthDate: p.birthDate }),
+      ...(p.federation !== undefined && { federation: p.federation }),
+      ...(p.fideId !== undefined && { fideId: p.fideId }),
+      id: String(p.pairingNumber),
+      name: p.name,
+      ...(nrs !== undefined && { nationalRatings: nrs }),
+      points: p.points,
+      rank: p.rank,
+      ...(p.rating !== undefined && { rating: p.rating }),
+      ...(p.sex !== undefined && { sex: p.sex }),
+      startingRank: p.pairingNumber,
+      ...(p.title !== undefined && { title: p.title }),
+    };
+  });
+
+  const metadata: TournamentMetadata = {
+    ...(chiefArbiter !== undefined && { chiefArbiter }),
+    ...(city !== undefined && { city }),
+    ...(deputyArbiters !== undefined && { deputyArbiters }),
+    ...(endDate !== undefined && { endDate }),
+    ...(federation !== undefined && { federation }),
+    ...(name.length > 0 && { name }),
+    ...(roundDates.length > 0 && { roundDates }),
+    ...(startDate !== undefined && { startDate }),
+    ...(timeControl !== undefined && { timeControl }),
+    ...(tournamentType !== undefined && { tournamentType }),
+  };
+
   return {
-    chiefArbiter,
-    city,
-    currentRound,
-    deputyArbiters,
-    endDate,
-    federation,
-    header,
-    name,
-    numberOfPlayers: players.length,
-    pairings: allPairings,
-    players,
-    roundDates: roundDates.length > 0 ? roundDates : undefined,
-    roundTimes: roundTimes.length > 0 ? roundTimes : undefined,
-    rounds: totalRounds,
-    startDate,
-    subtitle: subtitleShort,
-    tiebreaks: tiebreaks.length > 0 ? tiebreaks : undefined,
-    timeControl,
-    tournamentType,
-    venue,
+    completedRounds,
+    metadata,
+    players: tournamentPlayers,
+    ...(tiebreaks.length > 0 && { tiebreaks }),
+    totalRounds,
   };
 }
