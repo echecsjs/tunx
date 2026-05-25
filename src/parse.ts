@@ -49,7 +49,6 @@ import type {
   NationalRating as TournamentNationalRating,
 } from '@echecs/tournament';
 
-
 /** Search for a 4-byte little-endian marker in the buffer. */
 function findMarker(buffer: Uint8Array, marker: number): number {
   const b0 = (marker >>> 0) & 0xff;
@@ -210,10 +209,20 @@ function toGame(
       return { black: blackId, result: 'draw', white: whiteId };
     }
     case '+': {
-      return { black: blackId, forfeit: 'black', result: 'white', white: whiteId };
+      return {
+        black: blackId,
+        forfeit: 'black',
+        result: 'white',
+        white: whiteId,
+      };
     }
     case '-': {
-      return { black: blackId, forfeit: 'white', result: 'black', white: whiteId };
+      return {
+        black: blackId,
+        forfeit: 'white',
+        result: 'black',
+        white: whiteId,
+      };
     }
     case 'W': {
       return { black: blackId, rated: false, result: 'white', white: whiteId };
@@ -661,11 +670,15 @@ export default function parse(
     let a3Pos = a3Offset;
     for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
       // Read string: U16LE char count + chars
-      if (a3Pos + 2 > configBytes.byteLength) { break; }
+      if (a3Pos + 2 > configBytes.byteLength) {
+        break;
+      }
       const charCount = configDataView.getUint16(a3Pos, true);
       a3Pos += 2;
       const byteCount = charCount * 2;
-      if (a3Pos + byteCount > configBytes.byteLength) { break; }
+      if (a3Pos + byteCount > configBytes.byteLength) {
+        break;
+      }
 
       if (charCount > 0) {
         const decoder = new TextDecoder('utf-16le');
@@ -728,22 +741,30 @@ export default function parse(
   const completedRounds: CompletedRound[] = [];
   for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
     const roundPairingsRaw = allPairings[roundIndex];
-    if (roundPairingsRaw === undefined) { continue; }
+    if (roundPairingsRaw === undefined) {
+      continue;
+    }
 
     const games: Game[] = [];
     const byes: Bye[] = [];
 
     for (const pairing of roundPairingsRaw) {
-      if (pairing.result === undefined || pairing.result === 'Z') { continue; }
+      if (pairing.result === undefined || pairing.result === 'Z') {
+        continue;
+      }
       const whiteId = String(pairing.white);
       if (pairing.black === 0) {
         const kind = byeKind(pairing.result);
-        if (kind !== undefined) { byes.push({ kind, player: whiteId }); }
+        if (kind !== undefined) {
+          byes.push({ kind, player: whiteId });
+        }
         continue;
       }
       const blackId = String(pairing.black);
       const game = toGame(whiteId, blackId, pairing.result);
-      if (game !== undefined) { games.push(game); }
+      if (game !== undefined) {
+        games.push(game);
+      }
     }
 
     if (roundIndex < (currentRound ?? totalRounds)) {
@@ -756,7 +777,9 @@ export default function parse(
       p.nationalRatings === undefined
         ? undefined
         : p.nationalRatings.map((nr) => ({
-            ...(nr.classification !== undefined && { classification: nr.classification }),
+            ...(nr.classification !== undefined && {
+              classification: nr.classification,
+            }),
             federation: nr.federation,
             ...(nr.nationalId !== undefined && { nationalId: nr.nationalId }),
             rating: nr.rating,
