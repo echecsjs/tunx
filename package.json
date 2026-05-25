@@ -77,7 +77,7 @@
   },
   "type": "module",
   "types": "./dist/index.d.ts",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "dependencies": {
     "@echecs/tournament": "^3.1.1"
   }

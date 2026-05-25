@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.0 — 2026-05-25
+
+### Changed
+
+- **BREAKING:** `parse()` now returns `TournamentData | undefined` from
+  `@echecs/tournament` instead of the tunx-specific `Tournament` type.
+- Player `pairingNumber` replaced by `id` (string) and `startingRank` (number).
+- Per-player `RoundResult[]` converted to `CompletedRound[]` with `Game[]` and
+  `Bye[]`.
+- Metadata (`name`, `city`, `federation`, etc.) moved to `TournamentMetadata`.
+- Added `@echecs/tournament` as runtime dependency.
+
+### Removed
+
+- Tunx-specific type exports: `Tournament`, `Player`, `RoundResult`, `Pairing`,
+  `Header`, `ResultCode`, `Sex`, `Title`, `Tiebreak`.
+- Format-specific fields: `header`, `pairings[][]`, `venue`, `subtitle`,
+  `roundTimes`, `currentRound`.
+
 ## 0.3.0 — 2026-04-19
 
 ### Added
