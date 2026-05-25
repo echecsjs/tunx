@@ -45,7 +45,7 @@ interface ParseWarning {
   offset?: number;
 }
 
-interface Player {
+interface RawPlayer {
   // TRF-compatible fields
   birthDate?: string;
   federation?: string;
@@ -62,14 +62,7 @@ interface Player {
   title?: Title;
 }
 
-interface RoundResult {
-  color: '-' | 'b' | 'w';
-  opponentId: number | null;
-  result: ResultCode;
-  round: number;
-}
-
-interface Tournament {
+interface RawTournament {
   // TRF-compatible fields
   chiefArbiter?: string;
   city?: string;
@@ -78,7 +71,7 @@ interface Tournament {
   federation?: string;
   name?: string;
   numberOfPlayers?: number;
-  players: Player[];
+  players: RawPlayer[];
   roundDates?: string[];
   rounds: number;
   startDate?: string;
@@ -93,6 +86,13 @@ interface Tournament {
   roundTimes?: string[];
   subtitle?: string;
   venue?: string;
+}
+
+interface RoundResult {
+  color: '-' | 'b' | 'w';
+  opponentId: number | null;
+  result: ResultCode;
+  round: number;
 }
 
 /**
@@ -138,11 +138,11 @@ export type {
   ParseError,
   ParseOptions,
   ParseWarning,
-  Player,
+  RawPlayer,
+  RawTournament,
   ResultCode,
   RoundResult,
   Sex,
   Tiebreak,
   Title,
-  Tournament,
 };
