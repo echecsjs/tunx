@@ -249,14 +249,15 @@ function toGame(
 export default function parse(
   input: Uint8Array,
   options?: ParseOptions,
-): TournamentData | undefined {
+): TournamentData | null {
   const onError = options?.onError;
   const onWarning = options?.onWarning;
 
   // ── 1. Validate magic ────────────────────────────────────────────────────
   if (input.length < HEADER_SIZE) {
     onError?.({ message: 'File too short to be a TUNX file', offset: 0 });
-    return undefined;
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   const view = new DataView(input.buffer, input.byteOffset, input.byteLength);
@@ -267,7 +268,8 @@ export default function parse(
       message: `Invalid magic: expected 0x${MAGIC.toString(16)}, got 0x${magic.toString(16)}`,
       offset: 0,
     });
-    return undefined;
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   // ── 3. Locate section markers ────────────────────────────────────────────
@@ -278,21 +280,24 @@ export default function parse(
       message: 'Config section marker not found',
       offset: METADATA_OFFSET,
     });
-    return undefined;
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   const playerMarkerOffset = findMarker(input, PLAYER_MARKER);
 
   if (playerMarkerOffset === -1) {
     onError?.({ message: 'Player section marker not found' });
-    return undefined;
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   const pairingsMarkerOffset = findMarker(input, PAIRINGS_MARKER);
 
   if (pairingsMarkerOffset === -1) {
     onError?.({ message: 'Pairings section marker not found' });
-    return undefined;
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   // ── 4. Read metadata strings (0x6C → configMarker) ──────────────────────
