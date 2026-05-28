@@ -13,13 +13,13 @@ function fixture(name: string): Uint8Array {
 
 describe('parse()', () => {
   describe('invalid input', () => {
-    it('returns undefined for an empty buffer', () => {
-      expect(parse(new Uint8Array(0))).toBeUndefined();
+    it('returns null for an empty buffer', () => {
+      expect(parse(new Uint8Array(0))).toBeNull();
     });
 
-    it('returns undefined for a buffer with wrong magic', () => {
+    it('returns null for a buffer with wrong magic', () => {
       const bad = new Uint8Array(200).fill(0);
-      expect(parse(bad)).toBeUndefined();
+      expect(parse(bad)).toBeNull();
     });
 
     it('calls onError when magic is wrong', () => {
