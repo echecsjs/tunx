@@ -239,6 +239,36 @@ function toGame(
   }
 }
 
+/** Classify raw pairings for a single round into byes and games. */
+function classifyPairings(pairings: Pairing[]): {
+  byes: Bye[];
+  games: Game[];
+} {
+  const byes: Bye[] = [];
+  const games: Game[] = [];
+
+  for (const pairing of pairings) {
+    const { black, result, white } = pairing;
+    if (result === undefined || result === 'Z') {
+      continue;
+    }
+    const whiteId = String(white);
+    if (black === 0) {
+      const kind = byeKind(result);
+      if (kind !== undefined) {
+        byes.push({ kind, player: whiteId });
+      }
+    } else {
+      const game = toGame(whiteId, String(black), result);
+      if (game !== undefined) {
+        games.push(game);
+      }
+    }
+  }
+
+  return { byes, games };
+}
+
 /**
  * Parse a TUNX binary tournament file.
  *
@@ -251,7 +281,6 @@ export default function parse(
   options?: ParseOptions,
 ): TournamentData | null {
   const onError = options?.onError;
-  const onWarning = options?.onWarning;
 
   // ── 1. Validate magic ────────────────────────────────────────────────────
   if (input.length < HEADER_SIZE) {
@@ -259,6 +288,8 @@ export default function parse(
     // eslint-disable-next-line unicorn/no-null
     return null;
   }
+
+  const onWarning = options?.onWarning;
 
   const view = new DataView(input.buffer, input.byteOffset, input.byteLength);
   const magic = view.getUint32(0, true);
@@ -400,18 +431,18 @@ export default function parse(
       break;
     }
 
-    const strings: string[] = [];
-
-    for (let s = 0; s < PLAYER_STRING_COUNT; s++) {
-      if (playerReader.remaining < 2) {
-        onWarning?.({
-          message: `Player ${index + 1}: unexpected end of data while reading strings`,
-        });
-        strings.push('');
-        continue;
-      }
-      strings.push(playerReader.readString());
-    }
+    const strings: string[] = Array.from(
+      { length: PLAYER_STRING_COUNT },
+      () => {
+        if (playerReader.remaining < 2) {
+          onWarning?.({
+            message: `Player ${index + 1}: unexpected end of data while reading strings`,
+          });
+          return '';
+        }
+        return playerReader.readString();
+      },
+    );
 
     playerStrings.push(strings);
 
@@ -525,11 +556,6 @@ export default function parse(
       pairingIndex++
     ) {
       const offset = pairingIndex * PAIRING_RECORD_SIZE;
-
-      if (offset + PAIRING_RECORD_SIZE > pairingData.length) {
-        break;
-      }
-
       const pairingView = new DataView(
         pairingData.buffer,
         pairingData.byteOffset + offset,
@@ -750,27 +776,7 @@ export default function parse(
       continue;
     }
 
-    const games: Game[] = [];
-    const byes: Bye[] = [];
-
-    for (const pairing of roundPairingsRaw) {
-      if (pairing.result === undefined || pairing.result === 'Z') {
-        continue;
-      }
-      const whiteId = String(pairing.white);
-      if (pairing.black === 0) {
-        const kind = byeKind(pairing.result);
-        if (kind !== undefined) {
-          byes.push({ kind, player: whiteId });
-        }
-        continue;
-      }
-      const blackId = String(pairing.black);
-      const game = toGame(whiteId, blackId, pairing.result);
-      if (game !== undefined) {
-        games.push(game);
-      }
-    }
+    const { byes, games } = classifyPairings(roundPairingsRaw);
 
     if (roundIndex < (currentRound ?? totalRounds)) {
       completedRounds.push({ byes, games });
