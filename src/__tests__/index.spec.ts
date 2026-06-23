@@ -24,13 +24,13 @@ describe('parse()', () => {
 
     it('calls onError when magic is wrong', () => {
       const bad = new Uint8Array(200).fill(0);
-      let called = false;
+      let isCalled = false;
       parse(bad, {
         onError() {
-          called = true;
+          isCalled = true;
         },
       });
-      expect(called).toBe(true);
+      expect(isCalled).toBe(true);
     });
   });
 
@@ -247,7 +247,7 @@ describe('parse()', () => {
 
     it('has completedRounds with fewer rounds than totalRounds', () => {
       expect(tournament?.completedRounds.length).toBeLessThan(
-        tournament?.totalRounds ?? Number.POSITIVE_INFINITY,
+        tournament?.totalRounds ?? Infinity,
       );
     });
   });
