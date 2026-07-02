@@ -193,18 +193,7 @@ interface NationalRating {
 
 ```typescript
 type ResultCode =
-  | '+'
-  | '-'
-  | '0'
-  | '1'
-  | '='
-  | 'D'
-  | 'F'
-  | 'H'
-  | 'L'
-  | 'U'
-  | 'W'
-  | 'Z';
+  '+' | '-' | '0' | '1' | '=' | 'D' | 'F' | 'H' | 'L' | 'U' | 'W' | 'Z';
 ```
 
 | Code | Meaning                   |

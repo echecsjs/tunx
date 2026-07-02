@@ -114,18 +114,7 @@ type Tiebreak =
   | 'sonneborn-berger';
 
 type ResultCode =
-  | '+'
-  | '-'
-  | '0'
-  | '1'
-  | '='
-  | 'D'
-  | 'F'
-  | 'H'
-  | 'L'
-  | 'U'
-  | 'W'
-  | 'Z';
+  '+' | '-' | '0' | '1' | '=' | 'D' | 'F' | 'H' | 'L' | 'U' | 'W' | 'Z';
 
 type Sex = 'm' | 'w';
 
