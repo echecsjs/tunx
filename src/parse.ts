@@ -742,9 +742,9 @@ export default function parse(
     const player = sorted[index];
     const previous = sorted[index - 1];
     if (
-      index > 0 &&
       previous !== undefined &&
       player !== undefined &&
+      index > 0 &&
       player.points < previous.points
     ) {
       currentRankValue = index + 1;
