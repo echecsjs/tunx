@@ -1,13 +1,23 @@
 interface Header {
-  /** High-entropy bytes 0x34–0x67, likely tied to SW license/installation. */
+  /**
+  High-entropy bytes 0x34–0x67, likely tied to SW license/installation.
+  */
   installSignature: Uint8Array;
-  /** Older date (offset 0x30), possibly SW installation date. */
+  /**
+  Older date (offset 0x30), possibly SW installation date.
+  */
   installedAt?: Date;
-  /** High-entropy bytes 0x08–0x1B, likely tied to SW license/installation. */
+  /**
+  High-entropy bytes 0x08–0x1B, likely tied to SW license/installation.
+  */
   licenseHash: Uint8Array;
-  /** Date the file was last saved (offset 0x1C). */
+  /**
+  Date the file was last saved (offset 0x1C).
+  */
   savedAt?: Date;
-  /** Chess-Results tournament ID (offset 0x20). */
+  /**
+  Chess-Results tournament ID (offset 0x20).
+  */
   tournamentId: number;
 }
 
@@ -57,7 +67,9 @@ interface RawPlayer {
   rank: number;
   rating?: number;
   results: RoundResult[];
-  /** Player sex. `'w'` when explicitly flagged female; `undefined` otherwise. */
+  /**
+  Player sex. `'w'` when explicitly flagged female; `undefined` otherwise.
+  */
   sex?: Sex;
   title?: Title;
 }

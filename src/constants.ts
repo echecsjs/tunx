@@ -1,46 +1,76 @@
-/** Magic bytes at offset 0x00 of every TUNX file: 93 FF 89 44 */
+/**
+Magic bytes at offset 0x00 of every TUNX file: 93 FF 89 44
+*/
 const MAGIC = 0x44_89_ff_93;
 
-/** Config section marker: 95 FF 89 44 */
+/**
+Config section marker: 95 FF 89 44
+*/
 const CONFIG_MARKER = 0x44_89_ff_95;
 
-/** Player section marker: A5 FF 89 44 */
+/**
+Player section marker: A5 FF 89 44
+*/
 const PLAYER_MARKER = 0x44_89_ff_a5;
 
-/** Pairings section marker: B3 FF 89 44 */
+/**
+Pairings section marker: B3 FF 89 44
+*/
 const PAIRINGS_MARKER = 0x44_89_ff_b3;
 
-/** Header occupies bytes 0x00 – 0x6B (108 bytes). */
+/**
+Header occupies bytes 0x00 – 0x6B (108 bytes).
+*/
 const HEADER_SIZE = 0x6c;
 
-/** Byte offset inside the header for the install signature (52 bytes). */
+/**
+Byte offset inside the header for the install signature (52 bytes).
+*/
 const HEADER_INSTALL_SIGNATURE_OFFSET = 0x34;
 
-/** Size of the install signature block in bytes. */
+/**
+Size of the install signature block in bytes.
+*/
 const HEADER_INSTALL_SIGNATURE_SIZE = 52;
 
-/** Byte offset inside the header for the installed-at date (U32LE, YYYYMMDD). */
+/**
+Byte offset inside the header for the installed-at date (U32LE, YYYYMMDD).
+*/
 const HEADER_INSTALLED_AT_OFFSET = 0x30;
 
-/** Byte offset inside the header for the license hash (20 bytes). */
+/**
+Byte offset inside the header for the license hash (20 bytes).
+*/
 const HEADER_LICENSE_HASH_OFFSET = 0x08;
 
-/** Size of the license hash block in bytes. */
+/**
+Size of the license hash block in bytes.
+*/
 const HEADER_LICENSE_HASH_SIZE = 20;
 
-/** Byte offset inside the header for the saved-at date (U32LE, YYYYMMDD). */
+/**
+Byte offset inside the header for the saved-at date (U32LE, YYYYMMDD).
+*/
 const HEADER_SAVED_AT_OFFSET = 0x1c;
 
-/** Byte offset inside the header for the tournament ID (U32LE). */
+/**
+Byte offset inside the header for the tournament ID (U32LE).
+*/
 const HEADER_TOURNAMENT_ID_OFFSET = 0x20;
 
-/** Metadata strings begin immediately after the header. */
+/**
+Metadata strings begin immediately after the header.
+*/
 const METADATA_OFFSET = 0x6c;
 
-/** Offset from config data start to the first tiebreak code (5 × U16LE). */
+/**
+Offset from config data start to the first tiebreak code (5 × U16LE).
+*/
 const CONFIG_OFFSET_TIEBREAK_CODES = 0x1c;
 
-/** Offset from config data start to the number of tiebreaks (U8). */
+/**
+Offset from config data start to the number of tiebreaks (U8).
+*/
 const CONFIG_OFFSET_TIEBREAK_COUNT = 0x1b;
 
 /**
@@ -55,7 +85,9 @@ const CONFIG_OFFSET_TOTAL_ROUNDS = 0x00;
  */
 const CONFIG_OFFSET_CURRENT_ROUND = 0x11;
 
-/** Offset from config data start to the tournament end date (U32LE, YYYYMMDD). */
+/**
+Offset from config data start to the tournament end date (U32LE, YYYYMMDD).
+*/
 const CONFIG_OFFSET_END_DATE = 0x4b;
 
 /**
@@ -64,31 +96,49 @@ const CONFIG_OFFSET_END_DATE = 0x4b;
  */
 const CONFIG_OFFSET_PLAYER_COUNT = 0x13;
 
-/** Offset from config data start to the tournament start date (U32LE, YYYYMMDD). */
+/**
+Offset from config data start to the tournament start date (U32LE, YYYYMMDD).
+*/
 const CONFIG_OFFSET_START_DATE = 0x47;
 
-/** Offset from config data start to the tournament type (U8). */
+/**
+Offset from config data start to the tournament type (U8).
+*/
 const CONFIG_OFFSET_TOURNAMENT_TYPE = 0x0b;
 
-/** Number of UTF-16LE string fields per player record. */
+/**
+Number of UTF-16LE string fields per player record.
+*/
 const PLAYER_STRING_COUNT = 30;
 
-/** Size of the numeric block appended after the string fields in each player record. */
+/**
+Size of the numeric block appended after the string fields in each player record.
+*/
 const PLAYER_NUMERIC_BLOCK_SIZE = 110;
 
-/** Byte offset inside the numeric block for the FIDE rating (U16LE). */
+/**
+Byte offset inside the numeric block for the FIDE rating (U16LE).
+*/
 const PLAYER_NUMERIC_OFFSET_FIDE_RATING = 0x08;
 
-/** Byte offset inside the numeric block for the FIDE ID (U32LE). */
+/**
+Byte offset inside the numeric block for the FIDE ID (U32LE).
+*/
 const PLAYER_NUMERIC_OFFSET_FIDE_ID = 0x18;
 
-/** Byte offset inside the numeric block for the national rating (U16LE). */
+/**
+Byte offset inside the numeric block for the national rating (U16LE).
+*/
 const PLAYER_NUMERIC_OFFSET_NATIONAL_RATING = 0x0a;
 
-/** Byte offset inside the numeric block for the sex flag (U8: 0=male, 1=female). */
+/**
+Byte offset inside the numeric block for the sex flag (U8: 0=male, 1=female).
+*/
 const PLAYER_NUMERIC_OFFSET_SEX = 0x06;
 
-/** Fixed size of every pairing record in bytes. */
+/**
+Fixed size of every pairing record in bytes.
+*/
 const PAIRING_RECORD_SIZE = 21;
 
 /**
@@ -169,7 +219,9 @@ const RESULT_CODE = {
   WHITE_WINS_FORFEIT: 4,
 } as const;
 
-/** Pairing number used to indicate a bye (no opponent). */
+/**
+Pairing number used to indicate a bye (no opponent).
+*/
 const BYE_PLAYER_NUMBER = 0xff_fe;
 
 export {

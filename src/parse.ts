@@ -49,7 +49,9 @@ import type {
   NationalRating as TournamentNationalRating,
 } from '@echecs/tournament';
 
-/** Search for a 4-byte little-endian marker in the buffer. */
+/**
+Search for a 4-byte little-endian marker in the buffer.
+*/
 function findMarker(buffer: Uint8Array, marker: number): number {
   const b0 = (marker >>> 0) & 0xff;
   const b1 = (marker >>> 8) & 0xff;
@@ -103,7 +105,9 @@ function mapResultCode(code: number): ResultCode | undefined {
   }
 }
 
-/** Flip a result code from white's perspective to black's perspective. */
+/**
+Flip a result code from white's perspective to black's perspective.
+*/
 function flipResultCode(code: ResultCode): ResultCode {
   switch (code) {
     case '1': {
@@ -124,7 +128,9 @@ function flipResultCode(code: ResultCode): ResultCode {
   }
 }
 
-/** Compute points earned from a ResultCode. */
+/**
+Compute points earned from a ResultCode.
+*/
 function pointsFromResult(code: ResultCode): number {
   switch (code) {
     case '1':
@@ -143,18 +149,24 @@ function pointsFromResult(code: ResultCode): number {
   }
 }
 
-/** Extract a non-empty string or return undefined. */
+/**
+Extract a non-empty string or return undefined.
+*/
 function nonEmpty(value: string): string | undefined {
   return value.length > 0 ? value : undefined;
 }
 
-/** Cast a string to Title if it is a recognised title, else return undefined. */
+/**
+Cast a string to Title if it is a recognised title, else return undefined.
+*/
 function toTitle(value: string): Title | undefined {
   const valid: Title[] = ['CM', 'FM', 'GM', 'IM', 'WCM', 'WFM', 'WGM', 'WIM'];
   return valid.includes(value as Title) ? (value as Title) : undefined;
 }
 
-/** Format a YYYYMMDD integer as an ISO date string (YYYY-MM-DD). */
+/**
+Format a YYYYMMDD integer as an ISO date string (YYYY-MM-DD).
+*/
 function formatDate(yyyymmdd: number): string | undefined {
   if (yyyymmdd === 0) {
     return undefined;
@@ -167,7 +179,9 @@ function formatDate(yyyymmdd: number): string | undefined {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-/** Map a tunx ResultCode to a Bye kind. */
+/**
+Map a tunx ResultCode to a Bye kind.
+*/
 function byeKind(
   result: ResultCode,
 ): 'full' | 'half' | 'pairing' | 'zero' | undefined {
@@ -192,7 +206,9 @@ function byeKind(
   }
 }
 
-/** Convert a tunx pairing result to a Game. */
+/**
+Convert a tunx pairing result to a Game.
+*/
 function toGame(
   whiteId: string,
   blackId: string,
@@ -239,7 +255,9 @@ function toGame(
   }
 }
 
-/** Classify raw pairings for a single round into byes and games. */
+/**
+Classify raw pairings for a single round into byes and games.
+*/
 function classifyPairings(pairings: Pairing[]): {
   byes: Bye[];
   games: Game[];
@@ -267,6 +285,76 @@ function classifyPairings(pairings: Pairing[]): {
   }
 
   return { byes, games };
+}
+
+function readRoundPairings(
+  roundIndex: number,
+  startPairing: number,
+  endPairing: number,
+  pairingData: Uint8Array,
+  players: RawPlayer[],
+): Pairing[] {
+  const roundPairings: Pairing[] = [];
+
+  for (
+    let pairingIndex = startPairing;
+    pairingIndex < endPairing;
+    pairingIndex++
+  ) {
+    const offset = pairingIndex * PAIRING_RECORD_SIZE;
+    const pairingView = new DataView(
+      pairingData.buffer,
+      pairingData.byteOffset + offset,
+      PAIRING_RECORD_SIZE,
+    );
+    const white = pairingView.getUint16(0, true);
+    const black = pairingView.getUint16(2, true);
+    const resultCode = pairingView.getUint16(4, true);
+    const whiteResultCode = mapResultCode(resultCode);
+
+    const pairing: Pairing = {
+      black: black === BYE_PLAYER_NUMBER ? 0 : black,
+      board: pairingIndex - startPairing + 1,
+      result: whiteResultCode,
+      white,
+    };
+
+    roundPairings.push(pairing);
+
+    // Populate player results
+    const whitePlayer = players[white - 1];
+    const blackPlayer =
+      black === BYE_PLAYER_NUMBER ? undefined : players[black - 1];
+
+    if (whitePlayer !== undefined && whiteResultCode !== undefined) {
+      const whiteResult: RoundResult = {
+        color: 'w',
+        // eslint-disable-next-line unicorn/no-null
+        opponentId: black === BYE_PLAYER_NUMBER ? null : black,
+        result: whiteResultCode,
+        round: roundIndex + 1,
+      };
+
+      whitePlayer.results.push(whiteResult);
+    }
+
+    if (blackPlayer === undefined || whiteResultCode === undefined) {
+      continue;
+    }
+
+    const blackResultCode = flipResultCode(whiteResultCode);
+
+    const blackResult: RoundResult = {
+      color: 'b',
+      opponentId: white,
+      result: blackResultCode,
+      round: roundIndex + 1,
+    };
+
+    blackPlayer.results.push(blackResult);
+  }
+
+  return roundPairings;
 }
 
 /**
@@ -542,69 +630,19 @@ export default function parse(
   const allPairings: Pairing[][] = [];
 
   for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
-    const roundPairings: Pairing[] = [];
-
     const startPairing = roundIndex * pairingsPerRound;
     const endPairing = Math.min(
       startPairing + pairingsPerRound,
       totalPairingRecords,
     );
 
-    for (
-      let pairingIndex = startPairing;
-      pairingIndex < endPairing;
-      pairingIndex++
-    ) {
-      const offset = pairingIndex * PAIRING_RECORD_SIZE;
-      const pairingView = new DataView(
-        pairingData.buffer,
-        pairingData.byteOffset + offset,
-        PAIRING_RECORD_SIZE,
-      );
-      const white = pairingView.getUint16(0, true);
-      const black = pairingView.getUint16(2, true);
-      const resultCode = pairingView.getUint16(4, true);
-      const whiteResultCode = mapResultCode(resultCode);
-
-      const pairing: Pairing = {
-        black: black === BYE_PLAYER_NUMBER ? 0 : black,
-        board: pairingIndex - startPairing + 1,
-        result: whiteResultCode,
-        white,
-      };
-
-      roundPairings.push(pairing);
-
-      // Populate player results
-      const whitePlayer = players[white - 1];
-      const blackPlayer =
-        black === BYE_PLAYER_NUMBER ? undefined : players[black - 1];
-
-      if (whitePlayer !== undefined && whiteResultCode !== undefined) {
-        const whiteResult: RoundResult = {
-          color: 'w',
-          // eslint-disable-next-line unicorn/no-null
-          opponentId: black === BYE_PLAYER_NUMBER ? null : black,
-          result: whiteResultCode,
-          round: roundIndex + 1,
-        };
-
-        whitePlayer.results.push(whiteResult);
-      }
-
-      if (blackPlayer !== undefined && whiteResultCode !== undefined) {
-        const blackResultCode = flipResultCode(whiteResultCode);
-
-        const blackResult: RoundResult = {
-          color: 'b',
-          opponentId: white,
-          result: blackResultCode,
-          round: roundIndex + 1,
-        };
-
-        blackPlayer.results.push(blackResult);
-      }
-    }
+    const roundPairings = readRoundPairings(
+      roundIndex,
+      startPairing,
+      endPairing,
+      pairingData,
+      players,
+    );
 
     allPairings.push(roundPairings);
   }
@@ -623,14 +661,16 @@ export default function parse(
   for (let index = scanStart; index < configBytes.byteLength - 3; index++) {
     const value = configDataView.getUint32(index, true);
 
-    if (value >= 20_000_101 && value <= 20_991_231) {
-      const month = Math.floor((value % 10_000) / 100);
-      const day = value % 100;
+    if (value < 20_000_101 || value > 20_991_231) {
+      continue;
+    }
 
-      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-        roundBlockDateOffset = index;
-        break;
-      }
+    const month = Math.floor((value % 10_000) / 100);
+    const day = value % 100;
+
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      roundBlockDateOffset = index;
+      break;
     }
   }
 
@@ -645,14 +685,16 @@ export default function parse(
     ) {
       const value = configDataView.getUint32(index, true);
 
-      if (value >= 20_000_101 && value <= 20_991_231) {
-        const month = Math.floor((value % 10_000) / 100);
-        const day = value % 100;
+      if (value < 20_000_101 || value > 20_991_231) {
+        continue;
+      }
 
-        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-          secondDateOffset = index;
-          break;
-        }
+      const month = Math.floor((value % 10_000) / 100);
+      const day = value % 100;
+
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        secondDateOffset = index;
+        break;
       }
     }
 
@@ -662,13 +704,15 @@ export default function parse(
       for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
         const dateOffset = roundBlockDateOffset + roundIndex * blockSize;
 
-        if (dateOffset + 4 <= configBytes.byteLength) {
-          const dateValue = configDataView.getUint32(dateOffset, true);
-          const dateString = formatDate(dateValue);
+        if (dateOffset + 4 > configBytes.byteLength) {
+          continue;
+        }
 
-          if (dateString !== undefined) {
-            roundDates[roundIndex] = dateString;
-          }
+        const dateValue = configDataView.getUint32(dateOffset, true);
+        const dateString = formatDate(dateValue);
+
+        if (dateString !== undefined) {
+          roundDates[roundIndex] = dateString;
         }
       }
     }
